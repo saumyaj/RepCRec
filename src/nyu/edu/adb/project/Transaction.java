@@ -1,21 +1,48 @@
 package nyu.edu.adb.project;
 
-import java.util.List;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.HashMap;
 
 class Transaction {
-    private List<String> readLocks;
-    private List<String> writeLocks;
-    private List<String> sitesAccessed;
+    private Set<String> readLocks;
+    private Set<String> writeLocks;
+    private Set<String> sitesAccessed;
 
-    public List<String> getReadLocks() {
+    private Map<String, Variable> modifiedVariables;
+
+    String id;
+
+    long beginTime;
+
+    Transaction(String id, long tickTime) {
+        this.id = id;
+        readLocks = new HashSet<>();
+        writeLocks = new HashSet<>();
+        sitesAccessed = new HashSet<>();
+        modifiedVariables = new HashMap<>();
+        beginTime = tickTime;
+    }
+
+    public void writeToVariable(String variableName, int variableValue) throws Exception {
+        if (!writeLocks.contains(variableName)) {
+            throw new Exception("Transaction " + id + " has not acquired the write lock for variable " + variableName);
+        }
+
+        Variable v = new Variable(variableName, variableValue);
+        modifiedVariables.put(variableName, v);
+    }
+
+    public Set<String> getReadLocks() {
         return readLocks;
     }
 
-    public List<String> getWriteLocks() {
+    public Set<String> getWriteLocks() {
         return writeLocks;
     }
 
-    public List<String> getSitesAccessed() {
+    public Set<String> getSitesAccessed() {
         return sitesAccessed;
     }
 
