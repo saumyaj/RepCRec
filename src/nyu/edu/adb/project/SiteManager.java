@@ -27,8 +27,22 @@ class SiteManager {
         siteStatusMap.put(siteId, Status.DOWN);
     }
 
-    void recoverSite(int siteId) {
+    public void recoverSite(int siteId) {
         siteStatusMap.put(siteId, Status.UP);
+        Site site = siteMap.get(siteId);
+        site.clearStaleSet();
+        for(String variableName : variableToSiteIdMap.keySet()) {
+            List<Integer> sites = variableToSiteIdMap.get(variableName);
+            int availableCopies = 0;
+            for(Integer variableSite: sites) {
+                if(siteStatusMap.get(variableSite).equals(Status.UP)) {
+                    availableCopies++;
+                }
+            }
+            if(availableCopies > 1) {
+                site.addVariableToStaleSet(variableName);
+            }
+        }
     }
 
     /**
@@ -39,10 +53,28 @@ class SiteManager {
      */
     public int getReadLock(String variableName) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
+        int availableCopies = 0;
+        for(Integer siteId: listOfSiteIds) {
+            if(siteStatusMap.get(siteId).equals(Status.DOWN)) {
+                continue;
+            }
+            availableCopies++;
+        }
+
         for (Integer siteId: listOfSiteIds) {
             Site site = siteMap.get(siteId);
-            if (siteStatusMap.get(siteId).equals(Status.UP) && site.getReadLock(variableName)) {
+            if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
+                continue;
+            }
+            if (availableCopies==1 && site.getReadLock(variableName)) {
                 return siteId;
+            } else if(availableCopies==1 && !site.getReadLock(variableName)) {
+                continue;
+            } else if(availableCopies>1 && site.isVariableSafeForRead(variableName)) {
+                if(site.getReadLock(variableName)) {
+                    return siteId;
+                }
+                continue;
             }
         }
         return -1;
@@ -70,8 +102,11 @@ class SiteManager {
         return listOfSiteIdWhereLockAcquired;
     }
 
-    Optional<Integer> read(String variableName) {
-        //TODO - Find a suitable copy to read and return the appropriate value;
-        return Optional.empty();
+    public Optional<Integer> read(String variableName, int siteId) {
+        Site site = siteMap.get(siteId);
+        if(siteStatusMap.get(siteId).equals(Status.DOWN)) {
+            return Optional.empty();
+        }
+        return Optional.of(site.read(variableName));
     }
 }

@@ -38,7 +38,7 @@ public class Database {
         } else if (query.startsWith("fail(")) {
 
         } else if (query.startsWith("recover(")) {
-
+            recoverSite(paramsString);
         }
     }
 
@@ -73,6 +73,15 @@ public class Database {
             transactionManager.read( params[0].trim(), params[1].trim());
         } else {
             throw new IllegalArgumentException("write operation must have 3 arguments");
+        }
+    }
+
+    private void recoverSite(String paramsString) {
+        String[] params = paramsString.split(",");
+        if(params.length == 1) {
+            siteManager.recoverSite(Integer.parseInt(params[0].trim()));
+        } else {
+            throw new IllegalArgumentException("recover operation must have one argument");
         }
     }
 }

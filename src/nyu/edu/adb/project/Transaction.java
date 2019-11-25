@@ -1,17 +1,19 @@
 package nyu.edu.adb.project;
 
-import java.util.Set;
-import java.util.Map;
-import java.util.HashSet;
-import java.util.HashMap;
-
 class Transaction {
-    String id;
+    private final String name;
+    private final long beginTime;
 
-    long beginTime;
-
-    Transaction(String id, long tickTime) {
-        this.id = id;
+    Transaction(String name, long tickTime) {
+        this.name = name;
         beginTime = tickTime;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public long getBeginTime() {
+        return beginTime;
     }
 }

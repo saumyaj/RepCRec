@@ -3,14 +3,14 @@ package nyu.edu.adb.project;
 import java.util.*;
 
 class ReadWriteTransaction extends Transaction {
-    private Set<String> readLocks;
+    private HashMap<String, Integer> readLocks;
     private Set<String> writeLocks;
     private Set<Integer> sitesAccessed;
     private Map<String, Variable> modifiedVariables;
 
     ReadWriteTransaction(String id, long tickTime) {
         super(id, tickTime);
-        readLocks = new HashSet<>();
+        readLocks = new HashMap<>();
         writeLocks = new HashSet<>();
         sitesAccessed = new HashSet<>();
         modifiedVariables = new HashMap<>();
@@ -25,8 +25,15 @@ class ReadWriteTransaction extends Transaction {
         modifiedVariables.put(variableName, v);
     }
 
-    public Set<String> getReadLocks() {
+    public HashMap<String, Integer> getReadLocks() {
         return readLocks;
+    }
+
+    public int getReadLockSiteId(String variableName) {
+        if(!readLocks.containsKey(variableName)) {
+            throw new RuntimeException("Read lock not acquired for this transaction");
+        }
+        return readLocks.get(variableName);
     }
 
     public Set<String> getWriteLocks() {
@@ -37,8 +44,8 @@ class ReadWriteTransaction extends Transaction {
         return sitesAccessed;
     }
 
-    public boolean addReadLock(String variableName) {
-        return readLocks.add(variableName);
+    public boolean addReadLock(String variableName, Integer siteId) {
+        return readLocks.put(variableName, siteId);
     }
 
     public boolean addWriteLock(String variableName) {
@@ -49,8 +56,12 @@ class ReadWriteTransaction extends Transaction {
         return sitesAccessed.addAll(listOfSites);
     }
 
+    public boolean addAccessedSite(int siteId) {
+        return sitesAccessed.add(siteId);
+    }
+
     boolean hasReadLock(String variableName) {
-        return readLocks.contains(variableName);
+        return readLocks.containsKey(variableName);
     }
 
     boolean hasWriteLock(String variableName) {

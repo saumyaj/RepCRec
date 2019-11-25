@@ -76,9 +76,22 @@ public class TransactionManager {
     private Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction readWriteTransaction,
                                                            String variableName) {
         if (readWriteTransaction.hasReadLock(variableName)) {
-            Optional<Integer> value = siteManager.read(variableName);
-            return value;
+            Integer siteId = readWriteTransaction.getReadLockSiteId(variableName);
+            return siteManager.read(variableName, siteId);
         }
+
+        final int siteId = siteManager.getReadLock(variableName);
+
+        if(siteId != -1) {
+            readWriteTransaction.addReadLock(variableName, siteId);
+            readWriteTransaction.addAccessedSite(siteId);
+            return siteManager.read(variableName, siteId);
+        }
+
+        String transactionName = readWriteTransaction.getName();
+        // Adding operation to wait queue in order to finish it in future
+        dataManager.addWaitingOperation(variableName,
+                new Operation(transactionName, Operation.OperationType.READ, variableName));
         return Optional.empty();
     }
 
