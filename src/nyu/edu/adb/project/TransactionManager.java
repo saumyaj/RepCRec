@@ -48,7 +48,7 @@ public class TransactionManager {
 
         List<Integer> list = siteManager.getWriteLock(variableName);
         if (!list.isEmpty()) {
-            t.addWriteLock(variableName);
+            t.addWriteLock(variableName, list);
             t.addAccessedSites(list);
             t.writeToVariable(variableName, value);
             return;
@@ -84,7 +84,10 @@ public class TransactionManager {
         }
 
         if (readWriteTransaction.hasWriteLock(variableName)) {
-            Integer siteId = readWriteTransaction.getWriteLockSiteId(variableName);
+            //TODO - change logic - if write lock present, read written value
+
+            List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(variableName);
+            int siteId = siteIdList.get(0);
             data = siteManager.read(variableName, siteId);
             if (data.isPresent()) {
                 return data;
@@ -119,7 +122,26 @@ public class TransactionManager {
     private boolean commitTransaction(String transactionName) {
         Transaction transaction = transactionMap.get(transactionName);
 
-        //TODO - release all locks
+        if(transaction instanceof ReadWriteTransaction) {
+            ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
+            Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks();
+            for(String writeLockVariable: writeLockVariablesSet) {
+                List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
+                for(Integer siteId: siteIdList) {
+                    siteManager.releaseWriteLock(writeLockVariable, siteId);
+                }
+            }
+        }
+
+        if(transaction instanceof ReadWriteTransaction) {
+            ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
+            Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks();
+            for(String readLockVariable: readLockVariablesSet) {
+                int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
+                siteManager.releaseReadLock(readLockVariable, siteId);
+            }
+        }
+
         //TODO - remove transaction from waiting queues and graph
 
         if(transaction instanceof ReadWriteTransaction) {

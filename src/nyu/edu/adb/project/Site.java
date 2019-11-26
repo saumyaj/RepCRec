@@ -70,4 +70,8 @@ public class Site {
     public boolean getWriteLock(String variableName) {
         return lockTable.addWriteLock(variableName);
     }
+
+    public void clearAllLocks() {
+        lockTable.clearLockTable();
+    }
 }

@@ -4,7 +4,7 @@ import java.util.*;
 
 class ReadWriteTransaction extends Transaction {
     private HashMap<String, Integer> readLocks;
-    private HashMap<String, Integer> writeLocks;
+    private HashMap<String, List<Integer>> writeLocks;
     private Set<Integer> sitesAccessed;
     private Map<String, Integer> modifiedVariables;
     private boolean isAborted;
@@ -25,8 +25,8 @@ class ReadWriteTransaction extends Transaction {
         modifiedVariables.put(variableName, variableValue);
     }
 
-    public HashMap<String, Integer> getReadLocks() {
-        return readLocks;
+    public Set<String> getReadLocks() {
+        return readLocks.keySet();
     }
 
     int getReadLockSiteId(String variableName) {
@@ -36,11 +36,11 @@ class ReadWriteTransaction extends Transaction {
         return readLocks.get(variableName);
     }
 
-    int getWriteLockSiteId(String variableName) {
+    List<Integer> getWriteLockSiteId(String variableName) {
         if(!writeLocks.containsKey(variableName)) {
             throw new RuntimeException("Write lock not acquired for this transaction");
         }
-        return readLocks.get(variableName);
+        return writeLocks.get(variableName);
     }
 
     public Set<String> getWriteLocks() {
@@ -67,8 +67,8 @@ class ReadWriteTransaction extends Transaction {
         return readLocks.put(variableName, siteId);
     }
 
-    public int addWriteLock(String variableName, Integer siteId) {
-        return writeLocks.put(variableName, siteId);
+    public List<Integer> addWriteLock(String variableName, List<Integer> siteIdList) {
+        return writeLocks.put(variableName, siteIdList);
     }
 
     public boolean addAccessedSites(List<Integer> listOfSites) {

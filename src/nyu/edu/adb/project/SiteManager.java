@@ -43,6 +43,7 @@ class SiteManager {
                 site.addVariableToStaleSet(variableName);
             }
         }
+        site.clearAllLocks();
     }
 
     /**
@@ -122,5 +123,19 @@ class SiteManager {
             }
         }
         return true;
+    }
+
+    public void releaseReadLock(String variableName, int siteId) {
+        Site site = siteMap.get(siteId);
+        if(siteStatusMap.get(siteId).equals(Status.UP)){
+            site.releaseReadLock(variableName);
+        }
+    }
+
+    public void releaseWriteLock(String variableName, int siteId) {
+        Site site = siteMap.get(siteId);
+        if(siteStatusMap.get(siteId).equals(Status.UP)){
+            site.releaseWriteLock(variableName);
+        }
     }
 }
