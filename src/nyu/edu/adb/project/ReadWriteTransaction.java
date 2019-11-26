@@ -4,7 +4,7 @@ import java.util.*;
 
 class ReadWriteTransaction extends Transaction {
     private HashMap<String, Integer> readLocks;
-    private Set<String> writeLocks;
+    private HashMap<String, Integer> writeLocks;
     private Set<Integer> sitesAccessed;
     private Map<String, Integer> modifiedVariables;
     private boolean isAborted;
@@ -12,14 +12,14 @@ class ReadWriteTransaction extends Transaction {
     ReadWriteTransaction(String name, long tickTime) {
         super(name, tickTime);
         readLocks = new HashMap<>();
-        writeLocks = new HashSet<>();
+        writeLocks = new HashMap<>();
         sitesAccessed = new HashSet<>();
         modifiedVariables = new HashMap<>();
         isAborted = false;
     }
 
     public void writeToVariable(String variableName, int variableValue) throws Exception {
-        if (!writeLocks.contains(variableName)) {
+        if (!writeLocks.containsKey(variableName)) {
             throw new Exception("Transaction " + getName() + " has not acquired the write lock for variable " + variableName);
         }
         modifiedVariables.put(variableName, variableValue);
@@ -29,15 +29,22 @@ class ReadWriteTransaction extends Transaction {
         return readLocks;
     }
 
-    public int getReadLockSiteId(String variableName) {
+    int getReadLockSiteId(String variableName) {
         if(!readLocks.containsKey(variableName)) {
             throw new RuntimeException("Read lock not acquired for this transaction");
         }
         return readLocks.get(variableName);
     }
 
+    int getWriteLockSiteId(String variableName) {
+        if(!writeLocks.containsKey(variableName)) {
+            throw new RuntimeException("Write lock not acquired for this transaction");
+        }
+        return readLocks.get(variableName);
+    }
+
     public Set<String> getWriteLocks() {
-        return writeLocks;
+        return writeLocks.keySet();
     }
 
     public boolean isAborted() {
@@ -60,8 +67,8 @@ class ReadWriteTransaction extends Transaction {
         return readLocks.put(variableName, siteId);
     }
 
-    public boolean addWriteLock(String variableName) {
-        return writeLocks.add(variableName);
+    public int addWriteLock(String variableName, Integer siteId) {
+        return writeLocks.put(variableName, siteId);
     }
 
     public boolean addAccessedSites(List<Integer> listOfSites) {
@@ -77,6 +84,6 @@ class ReadWriteTransaction extends Transaction {
     }
 
     boolean hasWriteLock(String variableName) {
-        return writeLocks.contains(variableName);
+        return writeLocks.containsKey(variableName);
     }
 }

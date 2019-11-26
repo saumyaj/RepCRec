@@ -1,5 +1,6 @@
 package nyu.edu.adb.project;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 
 public class TransactionManager {
@@ -66,15 +67,28 @@ public class TransactionManager {
             );
         }
 
+
         ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction)transactionMap.get(transactionName);
         return readFromReadWriteTransaction(readWriteTransaction, variableName);
     }
 
     private Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction readWriteTransaction,
                                                            String variableName) {
+        Optional<Integer> data;
         if (readWriteTransaction.hasReadLock(variableName)) {
             Integer siteId = readWriteTransaction.getReadLockSiteId(variableName);
-            return siteManager.read(variableName, siteId);
+            data = siteManager.read(variableName, siteId);
+            if (data.isPresent()) {
+                return data;
+            }
+        }
+
+        if (readWriteTransaction.hasWriteLock(variableName)) {
+            Integer siteId = readWriteTransaction.getWriteLockSiteId(variableName);
+            data = siteManager.read(variableName, siteId);
+            if (data.isPresent()) {
+                return data;
+            }
         }
 
         final int siteId = siteManager.getReadLock(variableName);
