@@ -36,7 +36,7 @@ public class Database {
         }else if (query.equals("dump()")) {
 
         } else if (query.startsWith("fail(")) {
-
+            failSite(paramsString);
         } else if (query.startsWith("recover(")) {
             recoverSite(paramsString);
         }
@@ -79,9 +79,22 @@ public class Database {
     private void recoverSite(String paramsString) {
         String[] params = paramsString.split(",");
         if(params.length == 1) {
-            siteManager.recoverSite(Integer.parseInt(params[0].trim()));
+            int siteId = Integer.parseInt(params[0].trim());
+            siteManager.recoverSite(siteId);
         } else {
             throw new IllegalArgumentException("recover operation must have one argument");
         }
     }
+
+    private void failSite(String paramsString) {
+        String[] params = paramsString.split(",");
+        if(params.length == 1) {
+            int siteId = Integer.parseInt(params[0].trim());
+            siteManager.failSite(siteId);
+            transactionManager.checkTransactionsForAbortion(siteId);
+        } else {
+            throw new IllegalArgumentException("fail operation must have one argument");
+        }
+    }
+
 }

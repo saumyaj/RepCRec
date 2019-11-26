@@ -1,9 +1,6 @@
 package nyu.edu.adb.project;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class TransactionManager {
     Map<String, Transaction> transactionMap;
@@ -101,12 +98,32 @@ public class TransactionManager {
     }
 
     public void endTransaction(String transactionName) {
-        boolean wasCommitted = commitTransaction();
+        boolean wasCommitted = commitTransaction(transactionName);
         transactionMap.remove(transactionName);
     }
 
-    private boolean commitTransaction() {
-        // TODO - finish the commit logic
-        return false;
+    private boolean commitTransaction(String transactionName) {
+        Transaction transaction = transactionMap.get(transactionName);
+        if(transaction instanceof ReadWriteTransaction) {
+            ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
+            if(readWriteTransaction.isAborted()) {
+                return false;
+            }
+            return siteManager.commitWrites(readWriteTransaction.getModifiedVariables());
+        }
+        return true;
+    }
+
+    public void checkTransactionsForAbortion(int siteId) {
+        for(Transaction transaction: transactionMap.values()) {
+            if(transaction instanceof ReadOnlyTransaction) {
+                return;
+            }
+            ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
+            Set<Integer> sitesAccessed = readWriteTransaction.getSitesAccessed();
+            if(sitesAccessed.contains(siteId)) {
+                readWriteTransaction.setAborted(true);
+            }
+        }
     }
 }

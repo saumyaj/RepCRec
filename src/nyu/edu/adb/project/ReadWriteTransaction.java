@@ -6,23 +6,23 @@ class ReadWriteTransaction extends Transaction {
     private HashMap<String, Integer> readLocks;
     private Set<String> writeLocks;
     private Set<Integer> sitesAccessed;
-    private Map<String, Variable> modifiedVariables;
+    private Map<String, Integer> modifiedVariables;
+    private boolean isAborted;
 
-    ReadWriteTransaction(String id, long tickTime) {
-        super(id, tickTime);
+    ReadWriteTransaction(String name, long tickTime) {
+        super(name, tickTime);
         readLocks = new HashMap<>();
         writeLocks = new HashSet<>();
         sitesAccessed = new HashSet<>();
         modifiedVariables = new HashMap<>();
+        isAborted = false;
     }
 
     public void writeToVariable(String variableName, int variableValue) throws Exception {
         if (!writeLocks.contains(variableName)) {
-            throw new Exception("Transaction " + id + " has not acquired the write lock for variable " + variableName);
+            throw new Exception("Transaction " + getName() + " has not acquired the write lock for variable " + variableName);
         }
-
-        Variable v = new Variable(variableName, variableValue);
-        modifiedVariables.put(variableName, v);
+        modifiedVariables.put(variableName, variableValue);
     }
 
     public HashMap<String, Integer> getReadLocks() {
@@ -40,11 +40,23 @@ class ReadWriteTransaction extends Transaction {
         return writeLocks;
     }
 
+    public boolean isAborted() {
+        return isAborted;
+    }
+
+    public void setAborted(boolean aborted) {
+        isAborted = aborted;
+    }
+
+    public Map<String, Integer> getModifiedVariables() {
+        return modifiedVariables;
+    }
+
     public Set<Integer> getSitesAccessed() {
         return sitesAccessed;
     }
 
-    public boolean addReadLock(String variableName, Integer siteId) {
+    public int addReadLock(String variableName, Integer siteId) {
         return readLocks.put(variableName, siteId);
     }
 

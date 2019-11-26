@@ -109,4 +109,18 @@ class SiteManager {
         }
         return Optional.of(site.read(variableName));
     }
+
+    public boolean commitWrites( Map<String, Integer> modifiedVariables) {
+        for(String variableName: modifiedVariables.keySet()) {
+            int variableValue = modifiedVariables.get(variableName);
+            List<Integer> sites = variableToSiteIdMap.get(variableName);
+            for(int siteId: sites) {
+                if(siteStatusMap.get(siteId).equals(Status.UP)){
+                    Site site = siteMap.get(siteId);
+                    site.write(variableName, variableValue);
+                }
+            }
+        }
+        return true;
+    }
 }

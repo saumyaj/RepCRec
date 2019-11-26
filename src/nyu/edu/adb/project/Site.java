@@ -27,9 +27,12 @@ public class Site {
     }
 
     public void write(String variableName, int val) {
+        if (!dataMap.containsKey(variableName)) {
+            throw new RuntimeException("Site does not contain variable");
+        }
         dataMap.put(variableName, val);
         if (unsafeVariablesForReading.contains(variableName)) {
-
+            unsafeVariablesForReading.remove(variableName);
         }
     }
 
