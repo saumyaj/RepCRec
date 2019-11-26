@@ -104,6 +104,10 @@ public class TransactionManager {
 
     private boolean commitTransaction(String transactionName) {
         Transaction transaction = transactionMap.get(transactionName);
+
+        //TODO - release all locks
+        //TODO - remove transaction from waiting queues and graph
+
         if(transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
             if(readWriteTransaction.isAborted()) {
