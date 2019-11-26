@@ -75,6 +75,11 @@ public class TransactionManager {
     private Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction readWriteTransaction,
                                                            String variableName) {
         Optional<Integer> data;
+        Map<String, Integer> previousWrites = readWriteTransaction.getModifiedVariables();
+        if(previousWrites.containsKey(variableName)) {
+            return Optional.of(previousWrites.get(variableName));
+        }
+
         if (readWriteTransaction.hasReadLock(variableName)) {
             Integer siteId = readWriteTransaction.getReadLockSiteId(variableName);
             data = siteManager.read(variableName, siteId);
