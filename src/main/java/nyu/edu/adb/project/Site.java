@@ -1,9 +1,6 @@
 package nyu.edu.adb.project;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Site {
 
@@ -73,5 +70,13 @@ public class Site {
 
     public void clearAllLocks() {
         lockTable.clearLockTable();
+    }
+
+    Optional<String> getWriteLockHolder(String variableName) {
+        return lockTable.getWriteLockHolder(variableName);
+    }
+
+    List<String> getReadLockHolders(String variableName) {
+        return lockTable.getReadLockHolders(variableName);
     }
 }

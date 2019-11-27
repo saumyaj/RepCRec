@@ -16,6 +16,57 @@ public class TransactionManager {
         this.deadLockManager = new DeadLockManager();
     }
 
+    void runDeadLockDetection() {
+        List<List<String>> cycles = deadLockManager.getDeadLockCycles();
+        for (List<String> cycle: cycles) {
+            String transactionToBeAborted = findYoungestTransaction(cycle);
+            abortTransaction(transactionToBeAborted);
+        }
+    }
+
+    private void abortTransaction(String transactionName) {
+        deadLockManager.removeNode(transactionName);
+        dataManager.removeAllPendingOperationOfTransaction(transactionName);
+
+        Transaction transaction = transactionMap.get(transactionName);
+        if (transaction instanceof ReadOnlyTransaction) {
+            return;
+        }
+
+        releaseAllReadLocksOfTransaction((ReadWriteTransaction)transaction);
+        releaseAllWriteLocksOfTransaction((ReadWriteTransaction)transaction);
+    }
+
+    private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
+        Map<String, Integer> readLocks = transaction.getReadLocks();
+        for (Map.Entry<String, Integer> lock: readLocks.entrySet()) {
+            siteManager.releaseReadLock(lock.getKey(), lock.getValue());
+        }
+    }
+
+    private void releaseAllWriteLocksOfTransaction(ReadWriteTransaction transaction) {
+        Map<String, List<Integer>> readLocks = transaction.getWriteLocks();
+        for (Map.Entry<String, List<Integer>> lock: readLocks.entrySet()) {
+            String variableName = lock.getKey();
+            for (Integer siteId: lock.getValue()) {
+                siteManager.releaseWriteLock(variableName, siteId);
+            }
+        }
+    }
+
+    private String findYoungestTransaction(List<String> transactionNames) {
+        String youngestTransaction = null;
+        long yougestAge = Long.MIN_VALUE;
+        for (String transactionName: transactionNames) {
+            Transaction transaction = transactionMap.get(transactionName);
+            if (transaction.getBeginTime() > yougestAge) {
+                yougestAge = transaction.getBeginTime();
+                youngestTransaction = transactionName;
+            }
+        }
+        return youngestTransaction;
+    }
+
     void createReadWriteTransaction(String transactionName, long tickTime) throws Exception {
         validateTransactionName(transactionName);
         Transaction transaction = new ReadWriteTransaction(transactionName, tickTime);
@@ -53,8 +104,7 @@ public class TransactionManager {
 
         // Check if other transaction is already waiting
         if (dataManager.isOperationAlreadyWaiting(variableName)) {
-            dataManager.addWaitingOperation(variableName,
-                    new Operation(transactionName, Operation.OperationType.WRITE, variableName, value));
+            handleWaitingForOperation(variableName, transactionName, value);
             return;
         }
 
@@ -67,9 +117,39 @@ public class TransactionManager {
         }
 
         // Adding operation to wait queue in order to finish it in future
+        handleWaitingForOperation(variableName, transactionName, value);
+
+    }
+
+    private void handleWaitingForOperation(String variableName, String transactionName) {
+        Optional<String> lastWriteTransactionFromWaitQueue = dataManager.getLastWriteTransaction(variableName);
+
+        if (lastWriteTransactionFromWaitQueue.isPresent()) {
+            deadLockManager.addEdge(transactionName, lastWriteTransactionFromWaitQueue.get());
+        } else {
+            String writeLockHolder = siteManager.getWriteLockHolder(variableName).get();
+            deadLockManager.addEdge(transactionName, writeLockHolder);
+        }
+
+        dataManager.addWaitingOperation(variableName,
+                new Operation(transactionName, Operation.OperationType.READ, variableName));
+    }
+
+    private void handleWaitingForOperation(String variableName, String transactionName, int value) {
+        Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
+        List<String> queueHolders = dataManager.getQueueHoldersForWriteOperation(variableName);
+
+        // Adding waits - for edge for the responsible transaction
+        if (!queueHolders.isEmpty()) {
+            deadLockManager.addMultipleEdges(transactionName, queueHolders);
+        } else if (writeLockHolder.isPresent()) {
+            deadLockManager.addEdge(transactionName, writeLockHolder.get());
+        } else {
+            List<String> readLockHolders = siteManager.getReadLockHolders(variableName);
+            deadLockManager.addMultipleEdges(transactionName, readLockHolders);
+        }
         dataManager.addWaitingOperation(variableName,
                 new Operation(transactionName, Operation.OperationType.WRITE, variableName, value));
-
     }
 
     Optional<Integer> read(String transactionName, String variableName) throws Exception {
@@ -108,31 +188,18 @@ public class TransactionManager {
             be up.
         */
         if (readWriteTransaction.hasWriteLock(variableName)) {
-
-//            List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(variableName);
-
-
             if (readWriteTransaction.getModifiedVariables().containsKey(variableName)) {
                 data = Optional.of(readWriteTransaction.getModifiedVariables().get(variableName));
                 return data;
+            } else {
+                // There will never be a case for else. If we get a write lock we must have modified that variable
             }
-//            int siteId = siteIdList.get(0);
-//
-//            // Check if the transaction has already modified this variable
-//            // If yes, then read the modified copy
-//
-//            } else {
-//                data = siteManager.read(variableName, siteId);
-//            }
-//            if (data.isPresent()) {
-//                return data;
-//            }
         }
+
         String transactionName = readWriteTransaction.getName();
 
         if (dataManager.isOperationAlreadyWaiting(variableName)) {
-            dataManager.addWaitingOperation(variableName,
-                    new Operation(transactionName, Operation.OperationType.READ, variableName));
+            handleWaitingForOperation(variableName, transactionName);
             return Optional.empty();
         }
 
@@ -146,8 +213,7 @@ public class TransactionManager {
 
 
         // Adding operation to wait queue in order to finish it in future
-        dataManager.addWaitingOperation(variableName,
-                new Operation(transactionName, Operation.OperationType.READ, variableName));
+        handleWaitingForOperation(variableName, transactionName);
         return Optional.empty();
     }
 
@@ -166,7 +232,7 @@ public class TransactionManager {
 
         if(transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
-            Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks();
+            Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
             for(String writeLockVariable: writeLockVariablesSet) {
                 List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
                 for(Integer siteId: siteIdList) {
@@ -177,7 +243,7 @@ public class TransactionManager {
 
         if(transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
-            Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks();
+            Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks().keySet();
             for(String readLockVariable: readLockVariablesSet) {
                 int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
                 siteManager.releaseReadLock(readLockVariable, siteId);
@@ -185,6 +251,8 @@ public class TransactionManager {
         }
 
         //TODO - remove transaction from waiting queues and graph
+        deadLockManager.removeNode(transactionName);
+        dataManager.removeAllPendingOperationOfTransaction(transactionName);
 
         if(transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;

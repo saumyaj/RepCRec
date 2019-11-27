@@ -9,14 +9,24 @@ class DeadLockManager {
     DeadLockManager() {
         waitsForGraph = new HashMap<>();
         vertices = new HashSet<>();
+        cycles = new ArrayList<>();
     }
 
     void addEdge(String t1, String t2) {
+        if (t1.equals(t2)) {
+            return;
+        }
         Set<String> neighbors = waitsForGraph.getOrDefault(t1, new HashSet<>());
         neighbors.add(t2);
         waitsForGraph.put(t1, neighbors);
         vertices.add(t1);
         vertices.add(t2);
+    }
+
+    void addMultipleEdges(String src, List<String> targets) {
+        for (String target: targets) {
+            addEdge(src, target);
+        }
     }
 
     void removeEdge(String t1, String t2) {
@@ -37,7 +47,7 @@ class DeadLockManager {
         Set<String> graySet = new HashSet<>();
         Set<String> blackSet = new HashSet<>();
         Map<String, String> parentMap = new HashMap<>();
-        cycles = new ArrayList<>();
+        cycles.clear();
 
         for (String vertex : vertices) {
             whiteSet.add(vertex);
@@ -47,9 +57,6 @@ class DeadLockManager {
             String current = whiteSet.iterator().next();
             parentMap.put(current, null);
             dfs(current, whiteSet, graySet, blackSet, parentMap);
-//            if(dfs(current, whiteSet, graySet, blackSet, parentMap)) {
-//                return true;
-//            }
         }
         return cycles;
     }
@@ -70,13 +77,9 @@ class DeadLockManager {
             }
             parentMap.put(neighbor, current);
             dfs(neighbor, whiteSet, graySet, blackSet, parentMap);
-//            if(dfs(neighbor, whiteSet, graySet, blackSet, parentMap)) {
-//                return true;
-//            }
         }
         //move vertex from gray set to black set when done exploring.
         moveVertex(current, graySet, blackSet);
-//        return false;
     }
 
     private void traceCycle(String lastNode, String secondLastNode, Map<String, String> parentMap) {
@@ -90,17 +93,11 @@ class DeadLockManager {
             parent = parentMap.get(parent);
         }
         cycles.add(cycle);
-        System.out.println(cycle);
     }
 
     private void moveVertex(String vertex, Set<String> sourceSet,
                             Set<String> destinationSet) {
         sourceSet.remove(vertex);
         destinationSet.add(vertex);
-    }
-
-    Optional<List<String>> detectCycleIfAny() {
-
-        return Optional.empty();
     }
 }

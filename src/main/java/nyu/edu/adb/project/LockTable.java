@@ -1,9 +1,6 @@
 package nyu.edu.adb.project;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 class LockTable {
     Map<String, String> writeLocks;
@@ -14,6 +11,19 @@ class LockTable {
         writeLocks = new HashMap<>();
         readLocks = new HashMap<>();
         readLockCount = new HashMap<>();
+    }
+
+    Optional<String> getWriteLockHolder(String variableName) {
+        if (writeLocks.containsKey(variableName)) {
+            return Optional.of(writeLocks.get(variableName));
+        }
+        return Optional.empty();
+    }
+
+    List<String> getReadLockHolders(String variableName) {
+        List<String> readLockHolders = new ArrayList<>();
+        readLockHolders.addAll(readLocks.getOrDefault(variableName, new HashSet<>()));
+        return readLockHolders;
     }
 
     public boolean addWriteLock(String variableName, String transactionId) {

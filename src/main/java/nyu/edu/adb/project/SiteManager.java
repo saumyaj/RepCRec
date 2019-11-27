@@ -121,4 +121,30 @@ class SiteManager {
             site.releaseWriteLock(variableName);
         }
     }
+
+    Optional<String> getWriteLockHolder(String variableName) {
+        List<Integer> siteIds = variableToSiteIdMap.get(variableName);
+        Optional<String> writeLockHolder = Optional.empty();
+        for(Integer siteId: siteIds) {
+            if (siteStatusMap.get(siteId).equals(Status.UP)) {
+                Site site = siteMap.get(siteId);
+                if (site.getWriteLockHolder(variableName).isPresent()) {
+                    return site.getWriteLockHolder(variableName);
+                }
+            }
+        }
+        return writeLockHolder;
+    }
+
+    List<String> getReadLockHolders(String variableName) {
+        List<Integer> siteIds = variableToSiteIdMap.get(variableName);
+        List<String> readLockHolders = new ArrayList<>();
+        for(Integer siteId: siteIds) {
+            if (siteStatusMap.get(siteId).equals(Status.UP)) {
+                Site site = siteMap.get(siteId);
+                readLockHolders.addAll(site.getReadLockHolders(variableName));
+            }
+        }
+        return readLockHolders;
+    }
 }

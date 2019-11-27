@@ -19,7 +19,7 @@ public class Database {
         }
 
         if (tickTime % cycleDetectionInterval==0) {
-            //TODO - check for cycles in the waits-for graph
+            transactionManager.runDeadLockDetection();
         }
         tickTime += 1;
         String paramsString = getParams(query);

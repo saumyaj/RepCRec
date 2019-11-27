@@ -3,8 +3,8 @@ package nyu.edu.adb.project;
 import java.util.*;
 
 class ReadWriteTransaction extends Transaction {
-    private HashMap<String, Integer> readLocks;
-    private HashMap<String, List<Integer>> writeLocks;
+    private Map<String, Integer> readLocks;
+    private Map<String, List<Integer>> writeLocks;
     private Set<Integer> sitesAccessed;
     private Map<String, Integer> modifiedVariables;
     private boolean isAborted;
@@ -25,8 +25,8 @@ class ReadWriteTransaction extends Transaction {
         modifiedVariables.put(variableName, variableValue);
     }
 
-    public Set<String> getReadLocks() {
-        return readLocks.keySet();
+    public Map<String, Integer> getReadLocks() {
+        return readLocks;
     }
 
     int getReadLockSiteId(String variableName) {
@@ -43,8 +43,8 @@ class ReadWriteTransaction extends Transaction {
         return writeLocks.get(variableName);
     }
 
-    public Set<String> getWriteLocks() {
-        return writeLocks.keySet();
+    Map<String, List<Integer>>  getWriteLocks() {
+        return writeLocks;
     }
 
     public boolean isAborted() {
