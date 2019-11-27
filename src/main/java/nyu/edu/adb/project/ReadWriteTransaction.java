@@ -63,12 +63,14 @@ class ReadWriteTransaction extends Transaction {
         return sitesAccessed;
     }
 
-    public int addReadLock(String variableName, Integer siteId) {
-        return readLocks.put(variableName, siteId);
+    public void addReadLock(String variableName, Integer siteId) {
+        readLocks.put(variableName, siteId);
+        return;
     }
 
-    public List<Integer> addWriteLock(String variableName, List<Integer> siteIdList) {
-        return writeLocks.put(variableName, siteIdList);
+    public void addWriteLock(String variableName, List<Integer> siteIdList) {
+        writeLocks.put(variableName, siteIdList);
+        return;
     }
 
     public boolean addAccessedSites(List<Integer> listOfSites) {

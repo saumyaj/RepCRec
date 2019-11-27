@@ -1,5 +1,4 @@
 package nyu.edu.adb.project;
-
 import java.util.*;
 
 public class Site {
@@ -52,6 +51,23 @@ public class Site {
         }
     }
 
+    public void initializeVar(String variableName, int val) {
+        dataMap.put(variableName, val);
+    }
+
+    public void dumpSite() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("site " + id + "- ");
+        String[] variableList = new String[dataMap.size()];
+        dataMap.keySet().toArray(variableList);
+        Arrays.sort(variableList, Comparator.comparingInt((String a) -> Integer.parseInt(a.substring(1))));
+        for(String variableName: variableList) {
+            int val = dataMap.get(variableName);
+            sb.append(variableName + ":" + val + ", ");
+        }
+        System.out.println(sb.toString());
+    }
+
     public boolean releaseReadLock(String variableName) {
         return lockTable.releaseReadLock(variableName);
     }
@@ -79,4 +95,5 @@ public class Site {
     List<String> getReadLockHolders(String variableName) {
         return lockTable.getReadLockHolders(variableName);
     }
+
 }

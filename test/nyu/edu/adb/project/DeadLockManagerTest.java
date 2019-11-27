@@ -18,7 +18,7 @@ class DeadLockManagerTest {
         deadLockManager.addEdge("5", "6");
         deadLockManager.addEdge("6", "4");
 
-        deadLockManager.hasCycle();
+        deadLockManager.getDeadLockCycles();
     }
 
 }
