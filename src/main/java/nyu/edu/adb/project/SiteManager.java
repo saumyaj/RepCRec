@@ -147,4 +147,35 @@ class SiteManager {
         }
         return readLockHolders;
     }
+
+    void initializeVariables() {
+        final int NUMBER_OF_VARIABLES = 20;
+        for(int var = 1; var <= NUMBER_OF_VARIABLES; var++) {
+            String variableName = "x" + var;
+            List<Integer> listOfSites = new ArrayList<>();
+            int variableValue = var*10;
+            if(var % 2 == 0) {
+                for (int siteId = 1; siteId <= NUMBER_OF_SITES; siteId++) {
+                    listOfSites.add(siteId);
+                    Site site = siteMap.get(siteId);
+                    site.initializeVar(variableName, variableValue);
+                }
+            } else {
+                int siteId = 1 + var%10;
+                listOfSites.add(siteId);
+                Site site = siteMap.get(siteId);
+                site.initializeVar(variableName, variableValue);
+            }
+            variableToSiteIdMap.put(variableName, listOfSites);
+        }
+        for(int i=1;i<=NUMBER_OF_SITES;i++) {
+            siteStatusMap.put(i, Status.UP);
+        }
+    }
+
+    void dump() {
+        for(Site site: siteMap.values()) {
+            site.dumpSite();
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package nyu.edu.adb.project;
 
+import java.util.Optional;
+
 public class Database {
     long tickTime;
     int cycleDetectionInterval = 4;
@@ -43,7 +45,10 @@ public class Database {
     }
 
     private String getParams(String query) {
-        return query.substring(query.indexOf("(")+1,query.indexOf(")"));
+        if(query.contains("(")) {
+            return query.substring(query.indexOf("(")+1,query.indexOf(")"));
+        }
+        return null;
     }
 
     private void beginReadWriteTransaction(String paramsString) throws Exception {
@@ -70,7 +75,12 @@ public class Database {
     private void read(String paramsString) throws Exception {
         String[] params = paramsString.split(",");
         if (params.length == 2) {
-            transactionManager.read( params[0].trim(), params[1].trim());
+            Optional<Integer> readValue = transactionManager.read( params[0].trim(), params[1].trim());
+            if(readValue.isPresent()) {
+                System.out.println(readValue.get());
+            } else {
+                System.out.println("read failed");
+            }
         } else {
             throw new IllegalArgumentException("write operation must have 3 arguments");
         }
@@ -97,4 +107,11 @@ public class Database {
         }
     }
 
+    public void initialize() {
+        siteManager.initializeVariables();
+    }
+
+    public void dump() {
+        siteManager.dump();
+    }
 }
