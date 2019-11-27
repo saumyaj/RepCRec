@@ -63,12 +63,12 @@ public class Site {
         return lockTable.releaseWriteLock(variableName);
     }
 
-    public boolean getReadLock(String variableName) {
-        return lockTable.addReadLock(variableName);
+    public boolean getReadLock(String variableName, String transactionId) {
+        return lockTable.addReadLock(variableName, transactionId);
     }
 
-    public boolean getWriteLock(String variableName) {
-        return lockTable.addWriteLock(variableName);
+    public boolean getWriteLock(String variableName, String transactionId) {
+        return lockTable.addWriteLock(variableName, transactionId);
     }
 
     public void clearAllLocks() {

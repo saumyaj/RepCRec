@@ -55,7 +55,7 @@ class ReadWriteTransaction extends Transaction {
         isAborted = aborted;
     }
 
-    public Map<String, Integer> getModifiedVariables() {
+    Map<String, Integer> getModifiedVariables() {
         return modifiedVariables;
     }
 

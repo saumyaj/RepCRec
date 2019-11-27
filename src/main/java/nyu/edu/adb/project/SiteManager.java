@@ -1,5 +1,6 @@
 package nyu.edu.adb.project;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 
 
@@ -46,39 +47,23 @@ class SiteManager {
         site.clearAllLocks();
     }
 
-    /**
-     *
-     * @param variableName
-     * @return The id of the site that the transaction will be accessing; -1 if no site available for reading
-     *
+    /*
+     * This function tries to get read lock on first possible site and returns its id or returns null if no site is
+     * available.
      */
-    public int getReadLock(String variableName) {
+    Optional<Integer> getReadLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
-        int availableCopies = 0;
-        for(Integer siteId: listOfSiteIds) {
-            if(siteStatusMap.get(siteId).equals(Status.DOWN)) {
-                continue;
-            }
-            availableCopies++;
-        }
 
         for (Integer siteId: listOfSiteIds) {
             Site site = siteMap.get(siteId);
-            if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
-                continue;
+            if (siteStatusMap.get(siteId).equals(Status.UP)
+                    && site.isVariableSafeForRead(variableName)
+                    && site.getReadLock(variableName, transactionId)) {
+                return Optional.of(siteId);
             }
-            if (availableCopies==1 && site.getReadLock(variableName)) {
-                return siteId;
-            } else if(availableCopies==1 && !site.getReadLock(variableName)) {
-                continue;
-            } else if(availableCopies>1 && site.isVariableSafeForRead(variableName)) {
-                if(site.getReadLock(variableName)) {
-                    return siteId;
-                }
-                continue;
-            }
+
         }
-        return -1;
+        return Optional.empty();
     }
 
     /**
@@ -86,7 +71,7 @@ class SiteManager {
      * @param variableName
      * @return List of site ids where the write lock was successfully acquired
      */
-    public List<Integer> getWriteLock(String variableName) {
+    public List<Integer> getWriteLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         List<Integer> listOfSiteIdWhereLockAcquired = new ArrayList<>();
         for (Integer siteId: listOfSiteIds) {
@@ -94,11 +79,9 @@ class SiteManager {
             if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
                 continue;
             }
-            if (site.getWriteLock(variableName)) {
-                listOfSiteIdWhereLockAcquired.clear();
-                return listOfSiteIdWhereLockAcquired;
+            if (site.getWriteLock(variableName, transactionId)) {
+                listOfSiteIdWhereLockAcquired.add(siteId);
             }
-            listOfSiteIdWhereLockAcquired.add(siteId);
         }
         return listOfSiteIdWhereLockAcquired;
     }

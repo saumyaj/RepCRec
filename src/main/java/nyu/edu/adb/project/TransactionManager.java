@@ -7,11 +7,13 @@ public class TransactionManager {
     Map<String, Transaction> transactionMap;
     SiteManager siteManager;
     DataManager dataManager;
+    DeadLockManager deadLockManager;
 
     TransactionManager(SiteManager siteManager, DataManager dataManager) {
         transactionMap = new HashMap<>();
         this.siteManager = siteManager;
         this.dataManager = dataManager;
+        this.deadLockManager = new DeadLockManager();
     }
 
     void createReadWriteTransaction(String transactionName, long tickTime) throws Exception {
@@ -32,7 +34,7 @@ public class TransactionManager {
         }
     }
 
-    public void write(String transactionName, String variableName, int value) throws Exception {
+    void write(String transactionName, String variableName, int value) throws Exception {
 
         ReadWriteTransaction t;
         if (!(transactionMap.get(transactionName) instanceof ReadWriteTransaction)) {
@@ -41,12 +43,22 @@ public class TransactionManager {
         }
         t = (ReadWriteTransaction)transactionMap.get(transactionName);
 
-        if (t.getWriteLocks().contains(variableName)) {
-            t.writeToVariable(variableName, value);
+        // TODO - Should we worry about if one of these sites has gone down since the last write?
+        // We should probably try to get on all UP site again. In case a new site has come up
+
+//        if (t.getWriteLocks().contains(variableName)) {
+//            t.writeToVariable(variableName, value);
+//            return;
+//        }
+
+        // Check if other transaction is already waiting
+        if (dataManager.isOperationAlreadyWaiting(variableName)) {
+            dataManager.addWaitingOperation(variableName,
+                    new Operation(transactionName, Operation.OperationType.WRITE, variableName, value));
             return;
         }
 
-        List<Integer> list = siteManager.getWriteLock(variableName);
+        List<Integer> list = siteManager.getWriteLock(variableName, transactionName);
         if (!list.isEmpty()) {
             t.addWriteLock(variableName, list);
             t.addAccessedSites(list);
@@ -72,6 +84,9 @@ public class TransactionManager {
         return readFromReadWriteTransaction(readWriteTransaction, variableName);
     }
 
+    /*
+     * This method returns the integer value of the required variable or returns null if the variable is unavailable
+     */
     private Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction readWriteTransaction,
                                                            String variableName) {
         Optional<Integer> data;
@@ -88,26 +103,48 @@ public class TransactionManager {
             }
         }
 
+        /*
+            If we are not given a situation where all the sites fail, this should work. At least one of the sites should
+            be up.
+        */
         if (readWriteTransaction.hasWriteLock(variableName)) {
-            //TODO - change logic - if write lock present, read written value
 
-            List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(variableName);
-            int siteId = siteIdList.get(0);
-            data = siteManager.read(variableName, siteId);
-            if (data.isPresent()) {
+//            List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(variableName);
+
+
+            if (readWriteTransaction.getModifiedVariables().containsKey(variableName)) {
+                data = Optional.of(readWriteTransaction.getModifiedVariables().get(variableName));
                 return data;
             }
+//            int siteId = siteIdList.get(0);
+//
+//            // Check if the transaction has already modified this variable
+//            // If yes, then read the modified copy
+//
+//            } else {
+//                data = siteManager.read(variableName, siteId);
+//            }
+//            if (data.isPresent()) {
+//                return data;
+//            }
         }
-
-        final int siteId = siteManager.getReadLock(variableName);
-
-        if(siteId != -1) {
-            readWriteTransaction.addReadLock(variableName, siteId);
-            readWriteTransaction.addAccessedSite(siteId);
-            return siteManager.read(variableName, siteId);
-        }
-
         String transactionName = readWriteTransaction.getName();
+
+        if (dataManager.isOperationAlreadyWaiting(variableName)) {
+            dataManager.addWaitingOperation(variableName,
+                    new Operation(transactionName, Operation.OperationType.READ, variableName));
+            return Optional.empty();
+        }
+
+        final Optional<Integer> siteId = siteManager.getReadLock(variableName, transactionName);
+
+        if(siteId.isPresent()) {
+            readWriteTransaction.addReadLock(variableName, siteId.get());
+            readWriteTransaction.addAccessedSite(siteId.get());
+            return siteManager.read(variableName, siteId.get());
+        }
+
+
         // Adding operation to wait queue in order to finish it in future
         dataManager.addWaitingOperation(variableName,
                 new Operation(transactionName, Operation.OperationType.READ, variableName));
