@@ -57,7 +57,7 @@ public class Site {
 
     public void dumpSite() {
         StringBuffer sb = new StringBuffer();
-        sb.append("site " + id + "- ");
+        sb.append("site " + id + " - ");
         String[] variableList = new String[dataMap.size()];
         dataMap.keySet().toArray(variableList);
         Arrays.sort(variableList, Comparator.comparingInt((String a) -> Integer.parseInt(a.substring(1))));
@@ -68,8 +68,8 @@ public class Site {
         System.out.println(sb.toString());
     }
 
-    public boolean releaseReadLock(String variableName) {
-        return lockTable.releaseReadLock(variableName);
+    public boolean releaseReadLock(String variableName, String transactionName) {
+        return lockTable.releaseReadLock(variableName, transactionName);
     }
 
     public boolean releaseWriteLock(String variableName) {

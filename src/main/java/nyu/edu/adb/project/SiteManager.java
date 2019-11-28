@@ -25,6 +25,8 @@ class SiteManager {
     }
 
     void failSite(int siteId) {
+        Site site = siteMap.get(siteId);
+        site.clearAllLocks();
         siteStatusMap.put(siteId, Status.DOWN);
     }
 
@@ -108,10 +110,10 @@ class SiteManager {
         return true;
     }
 
-    public void releaseReadLock(String variableName, int siteId) {
+    public void releaseReadLock(String variableName, int siteId, String transactionName) {
         Site site = siteMap.get(siteId);
         if(siteStatusMap.get(siteId).equals(Status.UP)){
-            site.releaseReadLock(variableName);
+            site.releaseReadLock(variableName, transactionName);
         }
     }
 

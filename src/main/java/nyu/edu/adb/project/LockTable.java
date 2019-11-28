@@ -27,6 +27,8 @@ class LockTable {
     }
 
     public boolean addWriteLock(String variableName, String transactionId) {
+
+        // False if some other transaction is holding the write lock
         if (writeLocks.containsKey(variableName)
                 && !writeLocks.get(variableName).equals(transactionId)) {
             return false;
@@ -42,6 +44,11 @@ class LockTable {
             }
         }
 
+        //remove the read lock if the current transaction is holding one in order to enforce promotion of locks
+        Set<String> readLockHolders = readLocks.getOrDefault(variableName, new HashSet<>());
+        if (readLockHolders.contains(transactionId)) {
+            readLockHolders.remove(transactionId);
+        }
         writeLocks.put(variableName, transactionId);
         return true;
     }
@@ -74,7 +81,10 @@ class LockTable {
         return false;
     }
 
-    public boolean releaseReadLock(String variableName) {
+    public boolean releaseReadLock(String variableName, String transactionName) {
+
+        readLocks.get(variableName).remove(transactionName);
+
         int count = readLockCount.get(variableName);
         if(count == 1) {
             readLockCount.remove(variableName);
