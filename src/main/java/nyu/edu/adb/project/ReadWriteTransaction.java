@@ -18,9 +18,11 @@ class ReadWriteTransaction extends Transaction {
         isAborted = false;
     }
 
-    public void writeToVariable(String variableName, int variableValue) throws Exception {
+    public void writeToVariable(String variableName, int variableValue) {
         if (!writeLocks.containsKey(variableName)) {
-            throw new Exception("Transaction " + getName() + " has not acquired the write lock for variable " + variableName);
+
+            return;
+//            throw new Exception("Transaction " + getName() + " has not acquired the write lock for variable " + variableName);
         }
         modifiedVariables.put(variableName, variableValue);
     }

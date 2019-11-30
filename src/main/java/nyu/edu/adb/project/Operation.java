@@ -34,4 +34,8 @@ class Operation {
     public String getVariableName() {
         return variableName;
     }
+
+    public Integer getValue() {
+        return value;
+    }
 }

@@ -22,12 +22,35 @@ class DataManager {
         }
     }
 
-    Optional<Operation> getNextWaitingOperation(String variableName) {
-        List<Operation> waitQueue = variableWaitQueueMap.get(variableName);
+    Optional<Operation> pollNextWaitingOperation(String variableName) {
+        List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
         if (!waitQueue.isEmpty()) {
             return Optional.of(waitQueue.remove(0));
         }
         return Optional.empty();
+    }
+
+    // This function is only called if the first operation in the queue is a read operation
+    List<Operation> pollUntilNextWriteOperation(String variableName) {
+        List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
+        List<Operation> readOperations = new ArrayList<>();
+        while(!waitQueue.isEmpty()) {
+            Operation operation = waitQueue.get(0);
+            if (operation.getOperationType().equals(Operation.OperationType.WRITE)) {
+                break;
+            }
+            waitQueue.remove(0);
+            readOperations.add(operation);
+        }
+        return readOperations;
+    }
+
+    Optional<Operation> peekAtNextWaitingOperation(String variableName) {
+        List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
+        if (waitQueue.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(waitQueue.get(0));
     }
 
     boolean isOperationAlreadyWaiting(String variableName) {

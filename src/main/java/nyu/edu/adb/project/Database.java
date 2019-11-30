@@ -1,19 +1,25 @@
 package nyu.edu.adb.project;
 
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Database {
     long tickTime;
-    int cycleDetectionInterval = 4;
+    int cycleDetectionInterval = 1;
     TransactionManager transactionManager;
     SiteManager siteManager;
     DataManager dataManager;
     private final int NUMBER_OF_SITES = 10;
+    private final static Logger LOGGER =
+            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
     Database() {
         tickTime = 0;
         dataManager = new DataManager();
         siteManager = new SiteManager(NUMBER_OF_SITES);
         transactionManager = new TransactionManager(siteManager, dataManager);
+        initialize();
     }
     public void handleQuery(String query) throws Exception {
         if (query==null) {
@@ -66,19 +72,21 @@ public class Database {
     private void write(String paramsString) throws Exception {
         String[] params = paramsString.split(",");
         if (params.length == 3) {
-            transactionManager.write(params[0].trim(), params[1].trim(), Integer.parseInt(params[2]));
+            transactionManager.write(params[0].trim(), params[1].trim(), Integer.parseInt(params[2].trim()));
         } else {
             throw new IllegalArgumentException("write operation must have 3 arguments");
         }
     }
 
     private void read(String paramsString) throws Exception {
+
         String[] params = paramsString.split(",");
         if (params.length == 2) {
             Optional<Integer> readValue = transactionManager.read( params[0].trim(), params[1].trim());
             if(readValue.isPresent()) {
                 System.out.println(readValue.get());
             } else {
+                LOGGER.log(Level.INFO, "read failed for transaction " + params[0].trim());
                 System.out.println("read failed");
             }
         } else {

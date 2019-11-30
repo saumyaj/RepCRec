@@ -1,6 +1,7 @@
 package nyu.edu.adb.project;
 
-import javax.swing.text.html.Option;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.*;
 
 public class TransactionManager {
@@ -8,6 +9,9 @@ public class TransactionManager {
     SiteManager siteManager;
     DataManager dataManager;
     DeadLockManager deadLockManager;
+
+    private final static Logger LOGGER =
+            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     TransactionManager(SiteManager siteManager, DataManager dataManager) {
         transactionMap = new HashMap<>();
@@ -25,6 +29,7 @@ public class TransactionManager {
     }
 
     private void abortTransaction(String transactionName) {
+        LOGGER.log(Level.INFO, "aborting transaction " + transactionName);
         deadLockManager.removeNode(transactionName);
         dataManager.removeAllPendingOperationOfTransaction(transactionName);
 
@@ -40,7 +45,7 @@ public class TransactionManager {
     private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
         Map<String, Integer> readLocks = transaction.getReadLocks();
         for (Map.Entry<String, Integer> lock: readLocks.entrySet()) {
-            siteManager.releaseReadLock(lock.getKey(), lock.getValue());
+            siteManager.releaseReadLock(lock.getKey(), lock.getValue(), transaction.getName());
         }
     }
 
@@ -110,6 +115,8 @@ public class TransactionManager {
 
         List<Integer> list = siteManager.getWriteLock(variableName, transactionName);
         if (!list.isEmpty()) {
+
+            // TODO - Move these instructions to a function
             t.addWriteLock(variableName, list);
             t.addAccessedSites(list);
             t.writeToVariable(variableName, value);
@@ -117,6 +124,7 @@ public class TransactionManager {
         }
 
         // Adding operation to wait queue in order to finish it in future
+        LOGGER.log(Level.INFO, "Adding write operation for " + transactionName + " to the wait queue");
         handleWaitingForOperation(variableName, transactionName, value);
 
     }
@@ -158,7 +166,6 @@ public class TransactionManager {
                     readFromReadOnlyTransaction(transactionMap.get(transactionName), variableName)
             );
         }
-
 
         ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction)transactionMap.get(transactionName);
         return readFromReadWriteTransaction(readWriteTransaction, variableName);
@@ -227,26 +234,75 @@ public class TransactionManager {
         transactionMap.remove(transactionName);
     }
 
+    private void processWaitingOperationsIfAny(String variableName) {
+        Optional<Operation> nextOp = dataManager.peekAtNextWaitingOperation(variableName);
+        if (!nextOp.isPresent()) {
+            return;
+        }
+        Operation operation = nextOp.get();
+        if (operation.getOperationType().equals(Operation.OperationType.WRITE)) {
+            LOGGER.log(Level.INFO, "Transaction " + operation.getTransactionId() +
+                    " trying to get a write lock for " + variableName);
+            List<Integer> siteIds = siteManager.getWriteLock(operation.getVariableName(),
+                    operation.getTransactionId());
+
+            LOGGER.log(Level.INFO, "Transaction " + operation.getTransactionId() +
+                    " got write locks for " + variableName + " on sites " + siteIds.toString());
+            // Keep waiting if no site is available
+            if (siteIds.isEmpty()) {
+                return;
+            }
+
+            dataManager.pollNextWaitingOperation(variableName);
+            ReadWriteTransaction readWriteTransaction =
+                    (ReadWriteTransaction) transactionMap.get(operation.getTransactionId());
+
+            // TODO - Move these instructions to a method
+            readWriteTransaction.addWriteLock(variableName, siteIds);
+            readWriteTransaction.addAccessedSites(siteIds);
+            readWriteTransaction.writeToVariable(variableName, operation.getValue());
+        } else {
+            Optional<Integer> siteId = siteManager.getReadLock(variableName, operation.getTransactionId());
+
+            if (!siteId.isPresent()) {
+                return;
+            }
+
+            List<Operation> readOperations = dataManager.pollUntilNextWriteOperation(variableName);
+            ReadWriteTransaction readWriteTransaction;
+            for(Operation op: readOperations) {
+                readWriteTransaction = (ReadWriteTransaction)transactionMap.get(op.getTransactionId());
+                readWriteTransaction.addReadLock(variableName, siteId.get());
+                readWriteTransaction.addAccessedSite(siteId.get());
+                Optional<Integer> value =  siteManager.read(variableName, siteId.get());
+                System.out.println(value.get());
+            }
+
+        }
+    }
+
     private boolean commitTransaction(String transactionName) {
         Transaction transaction = transactionMap.get(transactionName);
 
         if(transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
             Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
+
+            // Releasing write locks
             for(String writeLockVariable: writeLockVariablesSet) {
                 List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
                 for(Integer siteId: siteIdList) {
                     siteManager.releaseWriteLock(writeLockVariable, siteId);
                 }
+                processWaitingOperationsIfAny(writeLockVariable);
             }
-        }
 
-        if(transaction instanceof ReadWriteTransaction) {
-            ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
+            // Releasing read locks
             Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks().keySet();
             for(String readLockVariable: readLockVariablesSet) {
                 int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
-                siteManager.releaseReadLock(readLockVariable, siteId);
+                siteManager.releaseReadLock(readLockVariable, siteId, transactionName);
+                processWaitingOperationsIfAny(readLockVariable);
             }
         }
 
