@@ -67,7 +67,7 @@ public class Database {
     }
 
     private void endTransaction(String paramsString) {
-        transactionManager.endTransaction(paramsString);
+        transactionManager.endTransaction(paramsString, tickTime);
     }
 
     private void write(String paramsString) throws Exception {

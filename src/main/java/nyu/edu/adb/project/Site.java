@@ -4,6 +4,7 @@ import java.util.*;
 public class Site {
 
     private final Map<String, Integer> dataMap;
+    private final Map<String, Map<Long, Integer>> writeHistory;
     private final Set<String> unsafeVariablesForReading;
     private final int id;
     private final LockTable lockTable;
@@ -13,6 +14,7 @@ public class Site {
         unsafeVariablesForReading = new HashSet<>();
         this.id = id;
         lockTable = new LockTable();
+        writeHistory = new HashMap<>();
     }
 
     public Integer read(String variableName) {
@@ -22,11 +24,25 @@ public class Site {
         return dataMap.get(variableName);
     }
 
-    public void write(String variableName, int val) {
+    public Optional<Integer> readForRO(String variableName, Long tickTime) {
+        if (!dataMap.containsKey(variableName)) {
+            throw new RuntimeException("Site does not contain variable");
+        }
+        Map<Long, Integer> variableHistory = writeHistory.get(variableName);
+        if(variableHistory.containsKey(tickTime)) {
+            return Optional.of(variableHistory.get(tickTime));
+        }
+        return Optional.empty();
+    }
+
+    public void write(String variableName, int val, long tickTime) {
         if (!dataMap.containsKey(variableName)) {
             throw new RuntimeException("Site does not contain variable");
         }
         dataMap.put(variableName, val);
+        Map<Long, Integer> variableHistory = writeHistory.get(variableName);
+        variableHistory.put(tickTime, val);
+
         if (unsafeVariablesForReading.contains(variableName)) {
             unsafeVariablesForReading.remove(variableName);
         }
@@ -53,6 +69,11 @@ public class Site {
 
     public void initializeVar(String variableName, int val) {
         dataMap.put(variableName, val);
+
+        Map<Long, Integer> variableHistory = new HashMap<>();
+        variableHistory.put(Long.valueOf(0), val);
+
+        writeHistory.put(variableName, variableHistory);
     }
 
     public void dumpSite() {

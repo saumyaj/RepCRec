@@ -1,5 +1,7 @@
 package nyu.edu.adb.project;
 
+import com.sun.org.apache.xpath.internal.operations.Variable;
+
 import java.util.*;
 
 
@@ -14,6 +16,7 @@ class SiteManager {
     private final int NUMBER_OF_SITES;
     private Set<String> replicatedVariables;
     private TransactionManager transactionManager;
+    private HashMap<String, Long> lastWriteMap;
 
     SiteManager(int NUMBER_OF_SITES) {
         this.NUMBER_OF_SITES = NUMBER_OF_SITES;
@@ -24,6 +27,7 @@ class SiteManager {
             siteMap.put(i, new Site(i));
         }
         replicatedVariables = new HashSet<>();
+        lastWriteMap = new HashMap<>();
     }
 
     void failSite(int siteId) {
@@ -43,6 +47,7 @@ class SiteManager {
             }
             transactionManager.processWaitingOperationsIfAny(variableName);
         }
+        transactionManager.checkROTransactionsForWaitingOperations(siteId);
     }
 
     /*
@@ -92,18 +97,40 @@ class SiteManager {
         return Optional.of(site.read(variableName));
     }
 
-    public boolean commitWrites( Map<String, Integer> modifiedVariables) {
-        for(String variableName: modifiedVariables.keySet()) {
-            int variableValue = modifiedVariables.get(variableName);
-            List<Integer> sites = variableToSiteIdMap.get(variableName);
-            for(int siteId: sites) {
-                if(siteStatusMap.get(siteId).equals(Status.UP)){
-                    Site site = siteMap.get(siteId);
-                    site.write(variableName, variableValue);
+    public Optional<Integer> readForRO(String variableName, Long tickTime) {
+        List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
+        for(int siteId: listOfSiteIds) {
+            Site site = siteMap.get(siteId);
+            if(siteStatusMap.get(siteId).equals(Status.UP)) {
+                Optional<Integer> val = site.readForRO(variableName, tickTime);
+                if(val.isPresent()) {
+                    return val;
                 }
             }
         }
-        return true;
+        return Optional.empty();
+    }
+
+    public Optional<Integer> readForROFromSpecificSite(String variableName, Long tickTime, int siteId) {
+        Site site = siteMap.get(siteId);
+        if(siteStatusMap.get(siteId).equals(Status.UP)) {
+            return site.readForRO(variableName, tickTime);
+        }
+        return Optional.empty();
+    }
+
+    public void commitWrites( Map<String, Integer> modifiedVariables, long tickTime) {
+        for(String variableName: modifiedVariables.keySet()) {
+            int variableValue = modifiedVariables.get(variableName);
+            List<Integer> sites = variableToSiteIdMap.get(variableName);
+            for (int siteId : sites) {
+                if (siteStatusMap.get(siteId).equals(Status.UP)) {
+                    Site site = siteMap.get(siteId);
+                    site.write(variableName, variableValue, tickTime);
+                }
+            }
+            lastWriteMap.put(variableName, tickTime);
+        }
     }
 
     public void releaseReadLock(String variableName, int siteId, String transactionName) {
@@ -166,6 +193,7 @@ class SiteManager {
                 site.initializeVar(variableName, variableValue);
             }
             variableToSiteIdMap.put(variableName, listOfSites);
+            lastWriteMap.put(variableName, Long.valueOf(0));
         }
         for(int i=1;i<=NUMBER_OF_SITES;i++) {
             siteStatusMap.put(i, Status.UP);
@@ -182,4 +210,7 @@ class SiteManager {
         this.transactionManager = transactionManager;
     }
 
+    public Map<String, Long> getLastWriteMapClone() {
+        return (Map<String, Long>)lastWriteMap.clone();
+    }
 }

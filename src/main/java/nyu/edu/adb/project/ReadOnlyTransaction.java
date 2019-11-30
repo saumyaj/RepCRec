@@ -5,21 +5,25 @@ import java.util.Map;
 
 class ReadOnlyTransaction extends Transaction {
     Map<String, Integer> allVariablesData;
+    Map<String, Long> lastWriteTimeMap;
+    String pendingReadVariable;
 
-
-    ReadOnlyTransaction(String id, long tickTime) {
+    ReadOnlyTransaction(String id, long tickTime, Map<String, Long> lastWriteTimeMap) {
         super(id, tickTime);
         allVariablesData = new HashMap<>();
-        readAllData();
+        this.lastWriteTimeMap = lastWriteTimeMap;
+        pendingReadVariable = null;
     }
 
-    private void readAllData() {
-        //TODO - This method reads most recently committed copy of all the data in the database
-        
+    Long getVariableTickTIme(String variableName) {
+        return lastWriteTimeMap.get(variableName);
     }
 
-    int getVariable(String variableName) {
-        //TODO - change this method to return appropriate variable value
-        return -1;
+    public String getPendingReadVariable() {
+        return pendingReadVariable;
+    }
+
+    public void setPendingReadVariable(String pendingReadVariable) {
+        this.pendingReadVariable = pendingReadVariable;
     }
 }

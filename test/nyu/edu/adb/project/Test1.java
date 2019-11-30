@@ -131,14 +131,18 @@ public class Test1 {
     void testFailureOfAccessedSiteAfterWrite() throws Exception {
         List<String> instructions = new ArrayList<>();
         instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
         instructions.add("W(T1, x2, 1000)");
         instructions.add("fail(3)");
         instructions.add("end(T1)");
+        instructions.add("R(T2, x2)");
+        instructions.add("end(T2)");
 
         Database database = new Database();
         Driver.executeFromList(database, instructions);
 
         String[] lines = baos.toString().split("\n");
+        assertEquals("20", lines[0]);
         assertTrue(database.transactionManager.abortedTransactions.contains("T1"));
     }
 
@@ -155,6 +159,82 @@ public class Test1 {
 
         String[] lines = baos.toString().split("\n");
         assertFalse(database.transactionManager.abortedTransactions.contains("T1"));
+    }
+
+    @Test
+    void testReadCommittedValue() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("end(T1)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("1000", lines[0]);
+    }
+
+    @Test
+    void testReadCommittedValueAfterWaiting() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("1000", lines[0]);
+    }
+
+    @Test
+    void testReadOnlyVariableVersion() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("beginRO(T2)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("end(T1)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("10", lines[0]);
+    }
+
+    @Test
+    void testReadOnlyIgnoresLocks() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("beginRO(T2)");
+        instructions.add("begin(T3)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("end(T1)");
+        instructions.add("W(T3, x1, 3000)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T2)");
+        instructions.add("end(T3)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("10", lines[0]);
+    }
+
+    @Test
+    void testReadOnlyCommittedValueAfterWaiting() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("fail(2)");
+        instructions.add("begin(T2)");
+        instructions.add("beginRO(T1)");
+        instructions.add("R(T1, x1)");
+        instructions.add("R(T2, x2)");
+        instructions.add("recover(2)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("20", lines[0]);
+        assertEquals("10", lines[1]);
     }
 
     @Test
