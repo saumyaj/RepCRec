@@ -19,6 +19,7 @@ public class Database {
         dataManager = new DataManager();
         siteManager = new SiteManager(NUMBER_OF_SITES);
         transactionManager = new TransactionManager(siteManager, dataManager);
+        siteManager.setTransactionManager(transactionManager);
         initialize();
     }
     public void handleQuery(String query) throws Exception {
@@ -87,7 +88,7 @@ public class Database {
                 System.out.println(readValue.get());
             } else {
                 LOGGER.log(Level.INFO, "read failed for transaction " + params[0].trim());
-                System.out.println("read failed");
+//                System.out.println("read failed");
             }
         } else {
             throw new IllegalArgumentException("write operation must have 3 arguments");

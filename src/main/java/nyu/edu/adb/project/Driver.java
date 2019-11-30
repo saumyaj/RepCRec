@@ -1,5 +1,6 @@
 package nyu.edu.adb.project;
 
+import javax.xml.crypto.Data;
 import java.io.File;
 import java.util.List;
 import java.util.Scanner;
@@ -26,4 +27,11 @@ public class Driver {
             database.handleQuery(s);
         }
     }
+
+    public static void executeFromList(Database database, List<String> instructions) throws Exception {
+        for (String s: instructions) {
+            database.handleQuery(s);
+        }
+    }
+
 }

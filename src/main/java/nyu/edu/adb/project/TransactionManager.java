@@ -9,12 +9,14 @@ public class TransactionManager {
     SiteManager siteManager;
     DataManager dataManager;
     DeadLockManager deadLockManager;
+    Set<String> abortedTransactions;
 
     private final static Logger LOGGER =
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     TransactionManager(SiteManager siteManager, DataManager dataManager) {
         transactionMap = new HashMap<>();
+        abortedTransactions = new HashSet<>();
         this.siteManager = siteManager;
         this.dataManager = dataManager;
         this.deadLockManager = new DeadLockManager();
@@ -135,8 +137,10 @@ public class TransactionManager {
         if (lastWriteTransactionFromWaitQueue.isPresent()) {
             deadLockManager.addEdge(transactionName, lastWriteTransactionFromWaitQueue.get());
         } else {
-            String writeLockHolder = siteManager.getWriteLockHolder(variableName).get();
-            deadLockManager.addEdge(transactionName, writeLockHolder);
+            Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
+            if (writeLockHolder.isPresent()) {
+                deadLockManager.addEdge(transactionName, writeLockHolder.get());
+            }
         }
 
         dataManager.addWaitingOperation(variableName,
@@ -231,10 +235,16 @@ public class TransactionManager {
 
     public void endTransaction(String transactionName) {
         boolean wasCommitted = commitTransaction(transactionName);
+        if(wasCommitted) {
+            LOGGER.log(Level.INFO, "Transaction " + transactionName + " committed successfully");
+        } else {
+            LOGGER.log(Level.INFO, "Transaction " + transactionName + " was aborted");
+            abortedTransactions.add(transactionName);
+        }
         transactionMap.remove(transactionName);
     }
 
-    private void processWaitingOperationsIfAny(String variableName) {
+    public void processWaitingOperationsIfAny(String variableName) {
         Optional<Operation> nextOp = dataManager.peekAtNextWaitingOperation(variableName);
         if (!nextOp.isPresent()) {
             return;

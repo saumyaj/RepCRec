@@ -1,6 +1,5 @@
 package nyu.edu.adb.project;
 
-import javax.swing.text.html.Option;
 import java.util.*;
 
 
@@ -14,6 +13,7 @@ class SiteManager {
     private Map<Integer, Status> siteStatusMap;
     private final int NUMBER_OF_SITES;
     private Set<String> replicatedVariables;
+    private TransactionManager transactionManager;
 
     SiteManager(int NUMBER_OF_SITES) {
         this.NUMBER_OF_SITES = NUMBER_OF_SITES;
@@ -35,13 +35,14 @@ class SiteManager {
     public void recoverSite(int siteId) {
         siteStatusMap.put(siteId, Status.UP);
         Site site = siteMap.get(siteId);
+        site.clearAllLocks();
         site.clearStaleSet();
         for(String variableName : variableToSiteIdMap.keySet()) {
             if(replicatedVariables.contains(variableName)) {
                 site.addVariableToStaleSet(variableName);
             }
+            transactionManager.processWaitingOperationsIfAny(variableName);
         }
-        site.clearAllLocks();
     }
 
     /*
@@ -176,4 +177,9 @@ class SiteManager {
             site.dumpSite();
         }
     }
+
+    public void setTransactionManager(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+
 }
