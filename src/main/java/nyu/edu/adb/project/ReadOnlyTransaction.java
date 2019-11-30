@@ -15,6 +15,7 @@ class ReadOnlyTransaction extends Transaction {
 
     private void readAllData() {
         //TODO - This method reads most recently committed copy of all the data in the database
+        
     }
 
     int getVariable(String variableName) {

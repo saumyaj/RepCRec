@@ -13,6 +13,7 @@ class SiteManager {
     private Map<String, List<Integer>> variableToSiteIdMap;
     private Map<Integer, Status> siteStatusMap;
     private final int NUMBER_OF_SITES;
+    private Set<String> replicatedVariables;
 
     SiteManager(int NUMBER_OF_SITES) {
         this.NUMBER_OF_SITES = NUMBER_OF_SITES;
@@ -22,6 +23,7 @@ class SiteManager {
         for(int i=1;i<=NUMBER_OF_SITES;i++) {
             siteMap.put(i, new Site(i));
         }
+        replicatedVariables = new HashSet<>();
     }
 
     void failSite(int siteId) {
@@ -33,14 +35,7 @@ class SiteManager {
         Site site = siteMap.get(siteId);
         site.clearStaleSet();
         for(String variableName : variableToSiteIdMap.keySet()) {
-            List<Integer> sites = variableToSiteIdMap.get(variableName);
-            int availableCopies = 0;
-            for(Integer variableSite: sites) {
-                if(siteStatusMap.get(variableSite).equals(Status.UP)) {
-                    availableCopies++;
-                }
-            }
-            if(availableCopies > 1) {
+            if(replicatedVariables.contains(variableName)) {
                 site.addVariableToStaleSet(variableName);
             }
         }
@@ -160,6 +155,7 @@ class SiteManager {
                     Site site = siteMap.get(siteId);
                     site.initializeVar(variableName, variableValue);
                 }
+                replicatedVariables.add(variableName);
             } else {
                 int siteId = 1 + var%10;
                 listOfSites.add(siteId);
