@@ -238,6 +238,39 @@ public class Test1 {
     }
 
     @Test
+    void testReadOnlyNoAbortion() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("beginRO(T2)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("R(T2, x2)");
+        instructions.add("W(T1, x2, 2000)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("20", lines[0]);
+        assertEquals("10", lines[1]);
+    }
+
+    @Test
+    void testDeadlockAbortion() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("W(T1, x1, 1000)");
+        instructions.add("R(T2, x2)");
+        instructions.add("W(T1, x2, 2000)");
+        instructions.add("R(T2, x1)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        assertEquals("20", lines[0]);
+        assertEquals("10", lines[1]);
+    }
+    @Test
     void testingTest() throws Exception {
         List<String> instructions = new ArrayList<>();
 
