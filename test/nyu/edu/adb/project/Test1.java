@@ -260,15 +260,20 @@ public class Test1 {
         instructions.add("begin(T1)");
         instructions.add("begin(T2)");
         instructions.add("W(T1, x1, 1000)");
-        instructions.add("R(T2, x2)");
-        instructions.add("W(T1, x2, 2000)");
-        instructions.add("R(T2, x1)");
+        instructions.add("W(T2, x2, 2000)");
+        instructions.add("W(T1, x2, 1001)");
+        instructions.add("W(T2, x1, 2001)");
         instructions.add("end(T1)");
-        instructions.add("end(T2)");
+        instructions.add("begin(T3)");
+        instructions.add("R(T3, x1)");
+        instructions.add("R(T3, x2)");
+        instructions.add("end(T3)");
+//        instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
-        assertEquals("10", lines[1]);
+        assertEquals("1000", lines[0]);
+        assertEquals("1001", lines[1]);
+//        assertEquals("10", lines[1]);
     }
     @Test
     void testingTest() throws Exception {

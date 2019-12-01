@@ -40,8 +40,10 @@ public class TransactionManager {
             return;
         }
 
-        releaseAllReadLocksOfTransaction((ReadWriteTransaction)transaction);
-        releaseAllWriteLocksOfTransaction((ReadWriteTransaction)transaction);
+        ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction)transaction;
+        releaseResourcesOfReadWriteTransaction(readWriteTransaction);
+
+        transactionMap.remove(transactionName);
     }
 
     private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
@@ -312,6 +314,25 @@ public class TransactionManager {
         }
     }
 
+    private void releaseResourcesOfReadWriteTransaction(ReadWriteTransaction readWriteTransaction) {
+
+        Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
+        for(String writeLockVariable: writeLockVariablesSet) {
+            List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
+            for(Integer siteId: siteIdList) {
+                siteManager.releaseWriteLock(writeLockVariable, siteId);
+            }
+            processWaitingOperationsIfAny(writeLockVariable);
+        }
+
+        Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks().keySet();
+        for(String readLockVariable: readLockVariablesSet) {
+            int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
+            siteManager.releaseReadLock(readLockVariable, siteId, readWriteTransaction.getName());
+            processWaitingOperationsIfAny(readLockVariable);
+        }
+    }
+
     private boolean commitTransaction(String transactionName, long tickTime) {
         Transaction transaction = transactionMap.get(transactionName);
         deadLockManager.removeNode(transactionName);
@@ -323,21 +344,7 @@ public class TransactionManager {
                 siteManager.commitWrites(readWriteTransaction.getModifiedVariables(), tickTime);
             }
 
-            Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
-            for(String writeLockVariable: writeLockVariablesSet) {
-                List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
-                for(Integer siteId: siteIdList) {
-                    siteManager.releaseWriteLock(writeLockVariable, siteId);
-                }
-                processWaitingOperationsIfAny(writeLockVariable);
-            }
-
-            Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks().keySet();
-            for(String readLockVariable: readLockVariablesSet) {
-                int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
-                siteManager.releaseReadLock(readLockVariable, siteId, transactionName);
-                processWaitingOperationsIfAny(readLockVariable);
-            }
+            releaseResourcesOfReadWriteTransaction(readWriteTransaction);
 
             if(readWriteTransaction.isAborted()) {
                 return false;
