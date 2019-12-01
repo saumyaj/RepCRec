@@ -1,4 +1,5 @@
 package nyu.edu.adb.project;
+
 import java.util.*;
 
 public class Site {
@@ -29,7 +30,7 @@ public class Site {
             throw new RuntimeException("Site does not contain variable");
         }
         Map<Long, Integer> variableHistory = writeHistory.get(variableName);
-        if(variableHistory.containsKey(tickTime)) {
+        if (variableHistory.containsKey(tickTime)) {
             return Optional.of(variableHistory.get(tickTime));
         }
         return Optional.empty();
@@ -49,7 +50,7 @@ public class Site {
     }
 
     public boolean isVariableSafeForRead(String variableName) {
-        if(unsafeVariablesForReading.contains(variableName)) {
+        if (unsafeVariablesForReading.contains(variableName)) {
             return false;
         }
         return true;
@@ -60,7 +61,7 @@ public class Site {
     }
 
     public void addVariableToStaleSet(String variableName) {
-        if(dataMap.containsKey(variableName)) {
+        if (dataMap.containsKey(variableName)) {
             unsafeVariablesForReading.add(variableName);
         } else {
             throw new RuntimeException("this variable is not present at this site");
@@ -74,19 +75,6 @@ public class Site {
         variableHistory.put(Long.valueOf(0), val);
 
         writeHistory.put(variableName, variableHistory);
-    }
-
-    public void dumpSite() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("site " + id + " - ");
-        String[] variableList = new String[dataMap.size()];
-        dataMap.keySet().toArray(variableList);
-        Arrays.sort(variableList, Comparator.comparingInt((String a) -> Integer.parseInt(a.substring(1))));
-        for(String variableName: variableList) {
-            int val = dataMap.get(variableName);
-            sb.append(variableName + ":" + val + ", ");
-        }
-        System.out.println(sb.toString());
     }
 
     public boolean releaseReadLock(String variableName, String transactionName) {
@@ -115,6 +103,23 @@ public class Site {
 
     List<String> getReadLockHolders(String variableName) {
         return lockTable.getReadLockHolders(variableName);
+    }
+
+    public void dumpSite() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("site " + id + " - ");
+        String[] variableList = new String[dataMap.size()];
+        dataMap.keySet().toArray(variableList);
+        Arrays.sort(variableList, Comparator.comparingInt((String a) -> Integer.parseInt(a.substring(1))));
+        for (String variableName : variableList) {
+            int val = dataMap.get(variableName);
+            sb.append(variableName + ":" + val + ", ");
+        }
+        System.out.println(sb.toString());
+    }
+
+    public boolean isWriteLockAvailable(String variableName, String transactionId) {
+        return lockTable.isWriteLockAvailable(variableName, transactionId);
     }
 
 }

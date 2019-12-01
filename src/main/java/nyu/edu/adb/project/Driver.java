@@ -18,7 +18,7 @@ public class Driver {
             String line = sc.nextLine();
             database.handleQuery(line);
         }
-        database.dump();
+//        database.dump();
     }
 
     public static void executeFromList(List<String> instructions) throws Exception {

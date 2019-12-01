@@ -43,7 +43,7 @@ public class Database {
         } else if (query.startsWith("R(")) {
             read(paramsString);
         }else if (query.equals("dump()")) {
-
+            siteManager.dump();
         } else if (query.startsWith("fail(")) {
             failSite(paramsString);
         } else if (query.startsWith("recover(")) {
@@ -118,9 +118,5 @@ public class Database {
 
     public void initialize() {
         siteManager.initializeVariables();
-    }
-
-    public void dump() {
-        siteManager.dump();
     }
 }

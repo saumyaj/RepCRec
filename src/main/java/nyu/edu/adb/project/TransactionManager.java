@@ -24,7 +24,8 @@ public class TransactionManager {
 
     void runDeadLockDetection() {
         List<List<String>> cycles = deadLockManager.getDeadLockCycles();
-        for (List<String> cycle: cycles) {
+        for (List<String> cycle : cycles) {
+            LOGGER.log(Level.INFO, "cycle found: " + cycle);
             String transactionToBeAborted = findYoungestTransaction(cycle);
             abortTransaction(transactionToBeAborted);
         }
@@ -40,7 +41,7 @@ public class TransactionManager {
             return;
         }
 
-        ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction)transaction;
+        ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
         releaseResourcesOfReadWriteTransaction(readWriteTransaction);
 
         transactionMap.remove(transactionName);
@@ -48,16 +49,16 @@ public class TransactionManager {
 
     private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
         Map<String, Integer> readLocks = transaction.getReadLocks();
-        for (Map.Entry<String, Integer> lock: readLocks.entrySet()) {
+        for (Map.Entry<String, Integer> lock : readLocks.entrySet()) {
             siteManager.releaseReadLock(lock.getKey(), lock.getValue(), transaction.getName());
         }
     }
 
     private void releaseAllWriteLocksOfTransaction(ReadWriteTransaction transaction) {
         Map<String, List<Integer>> readLocks = transaction.getWriteLocks();
-        for (Map.Entry<String, List<Integer>> lock: readLocks.entrySet()) {
+        for (Map.Entry<String, List<Integer>> lock : readLocks.entrySet()) {
             String variableName = lock.getKey();
-            for (Integer siteId: lock.getValue()) {
+            for (Integer siteId : lock.getValue()) {
                 siteManager.releaseWriteLock(variableName, siteId);
             }
         }
@@ -66,7 +67,7 @@ public class TransactionManager {
     private String findYoungestTransaction(List<String> transactionNames) {
         String youngestTransaction = null;
         long yougestAge = Long.MIN_VALUE;
-        for (String transactionName: transactionNames) {
+        for (String transactionName : transactionNames) {
             Transaction transaction = transactionMap.get(transactionName);
             if (transaction.getBeginTime() > yougestAge) {
                 yougestAge = transaction.getBeginTime();
@@ -102,9 +103,9 @@ public class TransactionManager {
             throw new IllegalArgumentException("Transaction " + transactionName + " is a ReadOnly Transaction, " +
                     "cannot write");
         }
-        t = (ReadWriteTransaction)transactionMap.get(transactionName);
+        t = (ReadWriteTransaction) transactionMap.get(transactionName);
 
-        // TODO - Should we worry about if one of these sites has gone down since the last write?
+
         // We should probably try to get on all UP site again. In case a new site has come up
 
 //        if (t.getWriteLocks().contains(variableName)) {
@@ -113,7 +114,8 @@ public class TransactionManager {
 //        }
 
         // Check if other transaction is already waiting
-        if (dataManager.isOperationAlreadyWaiting(variableName)) {
+        if (dataManager.precedingWriteOperationExists(variableName) ||
+                !siteManager.canAllUpSitesProvideWriteLock(variableName, transactionName)) {
             handleWaitingForOperation(variableName, transactionName, value);
             return;
         }
@@ -129,7 +131,6 @@ public class TransactionManager {
         }
 
         // Adding operation to wait queue in order to finish it in future
-        LOGGER.log(Level.INFO, "Adding write operation for " + transactionName + " to the wait queue");
         handleWaitingForOperation(variableName, transactionName, value);
 
     }
@@ -151,6 +152,7 @@ public class TransactionManager {
     }
 
     private void handleWaitingForOperation(String variableName, String transactionName, int value) {
+        LOGGER.log(Level.INFO, "Adding write operation for " + transactionName + " to the wait queue");
         Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
         List<String> queueHolders = dataManager.getQueueHoldersForWriteOperation(variableName);
 
@@ -168,11 +170,11 @@ public class TransactionManager {
     }
 
     Optional<Integer> read(String transactionName, String variableName) {
-        if (transactionMap.get(transactionName) instanceof  ReadOnlyTransaction ) {
+        if (transactionMap.get(transactionName) instanceof ReadOnlyTransaction) {
             return readFromReadOnlyTransaction(transactionMap.get(transactionName), variableName);
         }
 
-        ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction)transactionMap.get(transactionName);
+        ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transactionMap.get(transactionName);
         return readFromReadWriteTransaction(readWriteTransaction, variableName);
     }
 
@@ -183,7 +185,7 @@ public class TransactionManager {
                                                            String variableName) {
         Optional<Integer> data;
         Map<String, Integer> previousWrites = readWriteTransaction.getModifiedVariables();
-        if(previousWrites.containsKey(variableName)) {
+        if (previousWrites.containsKey(variableName)) {
             return Optional.of(previousWrites.get(variableName));
         }
 
@@ -217,7 +219,7 @@ public class TransactionManager {
 
         final Optional<Integer> siteId = siteManager.getReadLock(variableName, transactionName);
 
-        if(siteId.isPresent()) {
+        if (siteId.isPresent()) {
             readWriteTransaction.addReadLock(variableName, siteId.get());
             readWriteTransaction.addAccessedSite(siteId.get());
             return siteManager.read(variableName, siteId.get());
@@ -230,10 +232,10 @@ public class TransactionManager {
     }
 
     private Optional<Integer> readFromReadOnlyTransaction(Transaction transaction, String variableName) {
-        ReadOnlyTransaction readOnlyTransaction = (ReadOnlyTransaction)transaction;
+        ReadOnlyTransaction readOnlyTransaction = (ReadOnlyTransaction) transaction;
         Long tickTime = readOnlyTransaction.getVariableTickTIme(variableName);
         Optional<Integer> val = siteManager.readForRO(variableName, tickTime);
-        if(!val.isPresent()) {
+        if (!val.isPresent()) {
             readOnlyTransaction.setPendingReadVariable(variableName);
         }
         return val;
@@ -258,7 +260,7 @@ public class TransactionManager {
 
     public void endTransaction(String transactionName, long tickTime) {
         boolean wasCommitted = commitTransaction(transactionName, tickTime);
-        if(wasCommitted) {
+        if (wasCommitted) {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " committed successfully");
         } else {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " was aborted");
@@ -303,11 +305,11 @@ public class TransactionManager {
 
             List<Operation> readOperations = dataManager.pollUntilNextWriteOperation(variableName);
             ReadWriteTransaction readWriteTransaction;
-            for(Operation op: readOperations) {
-                readWriteTransaction = (ReadWriteTransaction)transactionMap.get(op.getTransactionId());
+            for (Operation op : readOperations) {
+                readWriteTransaction = (ReadWriteTransaction) transactionMap.get(op.getTransactionId());
                 readWriteTransaction.addReadLock(variableName, siteId.get());
                 readWriteTransaction.addAccessedSite(siteId.get());
-                Optional<Integer> value =  siteManager.read(variableName, siteId.get());
+                Optional<Integer> value = siteManager.read(variableName, siteId.get());
                 System.out.println(value.get());
             }
 
@@ -317,16 +319,16 @@ public class TransactionManager {
     private void releaseResourcesOfReadWriteTransaction(ReadWriteTransaction readWriteTransaction) {
 
         Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
-        for(String writeLockVariable: writeLockVariablesSet) {
+        for (String writeLockVariable : writeLockVariablesSet) {
             List<Integer> siteIdList = readWriteTransaction.getWriteLockSiteId(writeLockVariable);
-            for(Integer siteId: siteIdList) {
+            for (Integer siteId : siteIdList) {
                 siteManager.releaseWriteLock(writeLockVariable, siteId);
             }
             processWaitingOperationsIfAny(writeLockVariable);
         }
 
         Set<String> readLockVariablesSet = readWriteTransaction.getReadLocks().keySet();
-        for(String readLockVariable: readLockVariablesSet) {
+        for (String readLockVariable : readLockVariablesSet) {
             int siteId = readWriteTransaction.getReadLockSiteId(readLockVariable);
             siteManager.releaseReadLock(readLockVariable, siteId, readWriteTransaction.getName());
             processWaitingOperationsIfAny(readLockVariable);
@@ -338,15 +340,16 @@ public class TransactionManager {
         deadLockManager.removeNode(transactionName);
         dataManager.removeAllPendingOperationOfTransaction(transactionName);
 
-        if(transaction instanceof ReadWriteTransaction) {
+        if (transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
-            if(!readWriteTransaction.isAborted()) {
-                siteManager.commitWrites(readWriteTransaction.getModifiedVariables(), tickTime);
+            if (!readWriteTransaction.isAborted()) {
+                siteManager.commitWrites(readWriteTransaction.getModifiedVariables(),
+                        readWriteTransaction.getWriteLocks(), tickTime);
             }
 
             releaseResourcesOfReadWriteTransaction(readWriteTransaction);
 
-            if(readWriteTransaction.isAborted()) {
+            if (readWriteTransaction.isAborted()) {
                 return false;
             }
         }
@@ -354,13 +357,13 @@ public class TransactionManager {
     }
 
     public void checkTransactionsForAbortion(int siteId) {
-        for(Transaction transaction: transactionMap.values()) {
-            if(transaction instanceof ReadOnlyTransaction) {
+        for (Transaction transaction : transactionMap.values()) {
+            if (transaction instanceof ReadOnlyTransaction) {
                 return;
             }
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
             Set<Integer> sitesAccessed = readWriteTransaction.getSitesAccessed();
-            if(sitesAccessed.contains(siteId)) {
+            if (sitesAccessed.contains(siteId)) {
                 readWriteTransaction.setAborted(true);
             }
         }

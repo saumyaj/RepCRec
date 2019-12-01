@@ -8,6 +8,7 @@ class SiteManager {
     enum Status {
         UP, DOWN
     }
+
     private Map<Integer, Site> siteMap;
     private Map<String, List<Integer>> variableToSiteIdMap;
     private Map<Integer, Status> siteStatusMap;
@@ -21,7 +22,7 @@ class SiteManager {
         siteMap = new HashMap<>();
         variableToSiteIdMap = new HashMap<>();
         siteStatusMap = new HashMap<>();
-        for(int i=1;i<=NUMBER_OF_SITES;i++) {
+        for (int i = 1; i <= NUMBER_OF_SITES; i++) {
             siteMap.put(i, new Site(i));
         }
         replicatedVariables = new HashSet<>();
@@ -39,8 +40,8 @@ class SiteManager {
         Site site = siteMap.get(siteId);
         site.clearAllLocks();
         site.clearStaleSet();
-        for(String variableName : variableToSiteIdMap.keySet()) {
-            if(replicatedVariables.contains(variableName)) {
+        for (String variableName : variableToSiteIdMap.keySet()) {
+            if (replicatedVariables.contains(variableName)) {
                 site.addVariableToStaleSet(variableName);
             }
             transactionManager.processWaitingOperationsIfAny(variableName);
@@ -55,7 +56,7 @@ class SiteManager {
     Optional<Integer> getReadLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
 
-        for (Integer siteId: listOfSiteIds) {
+        for (Integer siteId : listOfSiteIds) {
             Site site = siteMap.get(siteId);
             if (siteStatusMap.get(siteId).equals(Status.UP)
                     && site.isVariableSafeForRead(variableName)
@@ -67,15 +68,34 @@ class SiteManager {
         return Optional.empty();
     }
 
+    public boolean canAllUpSitesProvideWriteLock(String variableName, String transactionId) {
+        List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
+        for (Integer siteId : listOfSiteIds) {
+            Site site = siteMap.get(siteId);
+            if (siteStatusMap.get(siteId).equals(Status.UP)
+                    && !site.isWriteLockAvailable(variableName, transactionId)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
-     *
      * @param variableName
      * @return List of site ids where the write lock was successfully acquired
      */
     public List<Integer> getWriteLock(String variableName, String transactionId) {
-        List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         List<Integer> listOfSiteIdWhereLockAcquired = new ArrayList<>();
-        for (Integer siteId: listOfSiteIds) {
+
+        // First check if writeLock is available on all the site
+        // This keeps site manager from acquiring partial writeLocks
+        if (!canAllUpSitesProvideWriteLock(variableName, transactionId)) {
+            return listOfSiteIdWhereLockAcquired;
+        }
+
+        List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
+
+        for (Integer siteId : listOfSiteIds) {
             Site site = siteMap.get(siteId);
             if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
                 continue;
@@ -89,7 +109,7 @@ class SiteManager {
 
     public Optional<Integer> read(String variableName, int siteId) {
         Site site = siteMap.get(siteId);
-        if(siteStatusMap.get(siteId).equals(Status.DOWN)) {
+        if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
             return Optional.empty();
         }
         return Optional.of(site.read(variableName));
@@ -97,11 +117,11 @@ class SiteManager {
 
     public Optional<Integer> readForRO(String variableName, Long tickTime) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
-        for(int siteId: listOfSiteIds) {
+        for (int siteId : listOfSiteIds) {
             Site site = siteMap.get(siteId);
-            if(siteStatusMap.get(siteId).equals(Status.UP)) {
+            if (siteStatusMap.get(siteId).equals(Status.UP)) {
                 Optional<Integer> val = site.readForRO(variableName, tickTime);
-                if(val.isPresent()) {
+                if (val.isPresent()) {
                     return val;
                 }
             }
@@ -111,16 +131,17 @@ class SiteManager {
 
     public Optional<Integer> readForROFromSpecificSite(String variableName, Long tickTime, int siteId) {
         Site site = siteMap.get(siteId);
-        if(siteStatusMap.get(siteId).equals(Status.UP)) {
+        if (siteStatusMap.get(siteId).equals(Status.UP)) {
             return site.readForRO(variableName, tickTime);
         }
         return Optional.empty();
     }
 
-    public void commitWrites( Map<String, Integer> modifiedVariables, long tickTime) {
-        for(String variableName: modifiedVariables.keySet()) {
+    public void commitWrites(Map<String, Integer> modifiedVariables, Map<String, List<Integer>> writeLocks,
+                             long tickTime) {
+        for (String variableName : modifiedVariables.keySet()) {
             int variableValue = modifiedVariables.get(variableName);
-            List<Integer> sites = variableToSiteIdMap.get(variableName);
+            List<Integer> sites = writeLocks.get(variableName);
             for (int siteId : sites) {
                 if (siteStatusMap.get(siteId).equals(Status.UP)) {
                     Site site = siteMap.get(siteId);
@@ -133,14 +154,14 @@ class SiteManager {
 
     public void releaseReadLock(String variableName, int siteId, String transactionName) {
         Site site = siteMap.get(siteId);
-        if(siteStatusMap.get(siteId).equals(Status.UP)){
+        if (siteStatusMap.get(siteId).equals(Status.UP)) {
             site.releaseReadLock(variableName, transactionName);
         }
     }
 
     public void releaseWriteLock(String variableName, int siteId) {
         Site site = siteMap.get(siteId);
-        if(siteStatusMap.get(siteId).equals(Status.UP)){
+        if (siteStatusMap.get(siteId).equals(Status.UP)) {
             site.releaseWriteLock(variableName);
         }
     }
@@ -148,7 +169,7 @@ class SiteManager {
     Optional<String> getWriteLockHolder(String variableName) {
         List<Integer> siteIds = variableToSiteIdMap.get(variableName);
         Optional<String> writeLockHolder = Optional.empty();
-        for(Integer siteId: siteIds) {
+        for (Integer siteId : siteIds) {
             if (siteStatusMap.get(siteId).equals(Status.UP)) {
                 Site site = siteMap.get(siteId);
                 if (site.getWriteLockHolder(variableName).isPresent()) {
@@ -162,7 +183,7 @@ class SiteManager {
     List<String> getReadLockHolders(String variableName) {
         List<Integer> siteIds = variableToSiteIdMap.get(variableName);
         List<String> readLockHolders = new ArrayList<>();
-        for(Integer siteId: siteIds) {
+        for (Integer siteId : siteIds) {
             if (siteStatusMap.get(siteId).equals(Status.UP)) {
                 Site site = siteMap.get(siteId);
                 readLockHolders.addAll(site.getReadLockHolders(variableName));
@@ -173,11 +194,11 @@ class SiteManager {
 
     void initializeVariables() {
         final int NUMBER_OF_VARIABLES = 20;
-        for(int var = 1; var <= NUMBER_OF_VARIABLES; var++) {
+        for (int var = 1; var <= NUMBER_OF_VARIABLES; var++) {
             String variableName = "x" + var;
             List<Integer> listOfSites = new ArrayList<>();
-            int variableValue = var*10;
-            if(var % 2 == 0) {
+            int variableValue = var * 10;
+            if (var % 2 == 0) {
                 for (int siteId = 1; siteId <= NUMBER_OF_SITES; siteId++) {
                     listOfSites.add(siteId);
                     Site site = siteMap.get(siteId);
@@ -185,7 +206,7 @@ class SiteManager {
                 }
                 replicatedVariables.add(variableName);
             } else {
-                int siteId = 1 + var%10;
+                int siteId = 1 + var % 10;
                 listOfSites.add(siteId);
                 Site site = siteMap.get(siteId);
                 site.initializeVar(variableName, variableValue);
@@ -193,13 +214,13 @@ class SiteManager {
             variableToSiteIdMap.put(variableName, listOfSites);
             lastWriteMap.put(variableName, Long.valueOf(0));
         }
-        for(int i=1;i<=NUMBER_OF_SITES;i++) {
+        for (int i = 1; i <= NUMBER_OF_SITES; i++) {
             siteStatusMap.put(i, Status.UP);
         }
     }
 
     void dump() {
-        for(Site site: siteMap.values()) {
+        for (Site site : siteMap.values()) {
             site.dumpSite();
         }
     }
@@ -209,6 +230,6 @@ class SiteManager {
     }
 
     public Map<String, Long> getLastWriteMapClone() {
-        return (Map<String, Long>)lastWriteMap.clone();
+        return (Map<String, Long>) lastWriteMap.clone();
     }
 }

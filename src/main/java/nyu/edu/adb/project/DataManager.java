@@ -53,6 +53,16 @@ class DataManager {
         return Optional.of(waitQueue.get(0));
     }
 
+    boolean precedingWriteOperationExists(String variableName) {
+        List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
+        for (Operation op: waitQueue) {
+            if (op.getOperationType().equals(Operation.OperationType.WRITE)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean isOperationAlreadyWaiting(String variableName) {
         if (variableWaitQueueMap.containsKey(variableName)) {
             return !variableWaitQueueMap.get(variableName).isEmpty();
