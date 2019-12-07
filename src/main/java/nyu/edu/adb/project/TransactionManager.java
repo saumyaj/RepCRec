@@ -24,10 +24,11 @@ public class TransactionManager {
 
     void runDeadLockDetection() {
         List<List<String>> cycles = deadLockManager.getDeadLockCycles();
-        for (List<String> cycle : cycles) {
-            LOGGER.log(Level.INFO, "cycle found: " + cycle);
-            String transactionToBeAborted = findYoungestTransaction(cycle);
+        while (cycles.size() > 0) {
+            LOGGER.log(Level.INFO, "cycle found");
+            String transactionToBeAborted = findYoungestTransaction(cycles);
             abortTransaction(transactionToBeAborted);
+            cycles = deadLockManager.getDeadLockCycles();
         }
     }
 
@@ -64,14 +65,16 @@ public class TransactionManager {
         }
     }
 
-    private String findYoungestTransaction(List<String> transactionNames) {
+    private String findYoungestTransaction(List<List<String>> cycles) {
         String youngestTransaction = null;
         long yougestAge = Long.MIN_VALUE;
-        for (String transactionName : transactionNames) {
-            Transaction transaction = transactionMap.get(transactionName);
-            if (transaction.getBeginTime() > yougestAge) {
-                yougestAge = transaction.getBeginTime();
-                youngestTransaction = transactionName;
+        for (List<String> cycle: cycles) {
+            for (String transactionName : cycle) {
+                Transaction transaction = transactionMap.get(transactionName);
+                if (transaction.getBeginTime() > yougestAge) {
+                    yougestAge = transaction.getBeginTime();
+                    youngestTransaction = transactionName;
+                }
             }
         }
         return youngestTransaction;

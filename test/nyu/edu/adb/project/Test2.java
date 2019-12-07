@@ -244,8 +244,8 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("22", lines[0]);
-        assertEquals("44", lines[1]);
+        assertEquals("44", lines[0]);
+        assertEquals("22", lines[1]);
 //        assertEquals("30", lines[2]);
 //        assertEquals("33", lines[3]);
     }
