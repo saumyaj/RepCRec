@@ -7,18 +7,18 @@ import java.util.*;
 public class TransactionManager {
     Map<String, Transaction> transactionMap;
     SiteManager siteManager;
-    DataManager dataManager;
+    WaitQueueManager waitQueueManager;
     DeadLockManager deadLockManager;
     Set<String> abortedTransactions;
 
     private final static Logger LOGGER =
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-    TransactionManager(SiteManager siteManager, DataManager dataManager) {
+    TransactionManager(SiteManager siteManager, WaitQueueManager waitQueueManager) {
         transactionMap = new HashMap<>();
         abortedTransactions = new HashSet<>();
         this.siteManager = siteManager;
-        this.dataManager = dataManager;
+        this.waitQueueManager = waitQueueManager;
         this.deadLockManager = new DeadLockManager();
     }
 
@@ -35,7 +35,7 @@ public class TransactionManager {
     private void abortTransaction(String transactionName) {
         LOGGER.log(Level.INFO, "aborting transaction " + transactionName);
         deadLockManager.removeNode(transactionName);
-        dataManager.removeAllPendingOperationOfTransaction(transactionName);
+        waitQueueManager.removeAllPendingOperationOfTransaction(transactionName);
 
         Transaction transaction = transactionMap.get(transactionName);
         if (transaction instanceof ReadOnlyTransaction) {
@@ -117,7 +117,7 @@ public class TransactionManager {
 //        }
 
         // Check if other transaction is already waiting
-        if (dataManager.precedingWriteOperationExists(variableName) ||
+        if (waitQueueManager.precedingWriteOperationExists(variableName) ||
                 !siteManager.canAllUpSitesProvideWriteLock(variableName, transactionName)) {
             handleWaitingForOperation(variableName, transactionName, value);
             return;
@@ -139,7 +139,7 @@ public class TransactionManager {
     }
 
     private void handleWaitingForOperation(String variableName, String transactionName) {
-        Optional<String> lastWriteTransactionFromWaitQueue = dataManager.getLastWriteTransaction(variableName);
+        Optional<String> lastWriteTransactionFromWaitQueue = waitQueueManager.getLastWriteTransaction(variableName);
 
         if (lastWriteTransactionFromWaitQueue.isPresent()) {
             deadLockManager.addEdge(transactionName, lastWriteTransactionFromWaitQueue.get());
@@ -150,14 +150,14 @@ public class TransactionManager {
             }
         }
 
-        dataManager.addWaitingOperation(variableName,
+        waitQueueManager.addWaitingOperation(variableName,
                 new Operation(transactionName, Operation.OperationType.READ, variableName));
     }
 
     private void handleWaitingForOperation(String variableName, String transactionName, int value) {
         LOGGER.log(Level.INFO, "Adding write operation for " + transactionName + " to the wait queue");
         Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
-        List<String> queueHolders = dataManager.getQueueHoldersForWriteOperation(variableName);
+        List<String> queueHolders = waitQueueManager.getQueueHoldersForWriteOperation(variableName);
 
         // Adding waits - for edge for the responsible transaction
         if (!queueHolders.isEmpty()) {
@@ -168,7 +168,7 @@ public class TransactionManager {
             List<String> readLockHolders = siteManager.getReadLockHolders(variableName);
             deadLockManager.addMultipleEdges(transactionName, readLockHolders);
         }
-        dataManager.addWaitingOperation(variableName,
+        waitQueueManager.addWaitingOperation(variableName,
                 new Operation(transactionName, Operation.OperationType.WRITE, variableName, value));
     }
 
@@ -215,7 +215,7 @@ public class TransactionManager {
 
         String transactionName = readWriteTransaction.getName();
 
-        if (dataManager.isOperationAlreadyWaiting(variableName)) {
+        if (waitQueueManager.isOperationAlreadyWaiting(variableName)) {
             handleWaitingForOperation(variableName, transactionName);
             return Optional.empty();
         }
@@ -273,7 +273,7 @@ public class TransactionManager {
     }
 
     public void processWaitingOperationsIfAny(String variableName) {
-        Optional<Operation> nextOp = dataManager.peekAtNextWaitingOperation(variableName);
+        Optional<Operation> nextOp = waitQueueManager.peekAtNextWaitingOperation(variableName);
         if (!nextOp.isPresent()) {
             return;
         }
@@ -291,7 +291,7 @@ public class TransactionManager {
                 return;
             }
 
-            dataManager.pollNextWaitingOperation(variableName);
+            waitQueueManager.pollNextWaitingOperation(variableName);
             ReadWriteTransaction readWriteTransaction =
                     (ReadWriteTransaction) transactionMap.get(operation.getTransactionId());
 
@@ -306,7 +306,7 @@ public class TransactionManager {
                 return;
             }
 
-            List<Operation> readOperations = dataManager.pollUntilNextWriteOperation(variableName);
+            List<Operation> readOperations = waitQueueManager.pollUntilNextWriteOperation(variableName);
             ReadWriteTransaction readWriteTransaction;
             for (Operation op : readOperations) {
                 readWriteTransaction = (ReadWriteTransaction) transactionMap.get(op.getTransactionId());
@@ -341,7 +341,7 @@ public class TransactionManager {
     private boolean commitTransaction(String transactionName, long tickTime) {
         Transaction transaction = transactionMap.get(transactionName);
         deadLockManager.removeNode(transactionName);
-        dataManager.removeAllPendingOperationOfTransaction(transactionName);
+        waitQueueManager.removeAllPendingOperationOfTransaction(transactionName);
 
         if (transaction instanceof ReadWriteTransaction) {
             ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;

@@ -326,4 +326,55 @@ public class Test2 {
 //        assertEquals("33", lines[3]);
     }
 
+    @Test
+    void testDeadlockedTransactionAborted() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("begin(T3)");
+        instructions.add("W(T1, x1,5)");
+        instructions.add("W(T3, x2,32)");
+        instructions.add("W(T2, x1,17)");
+        instructions.add("end(T1)");
+        instructions.add("begin(T4)");
+        instructions.add("W(T4, x4,35)");
+        instructions.add("W(T3, x5,21)");
+        instructions.add("W(T4,x2,21)");
+        instructions.add("W(T3,x4,23)");
+        instructions.add("end(T3)");
+        instructions.add("end(T2)");
+        instructions.add("dump()");
+
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+        System.out.println(Arrays.toString(lines));
+//        assertEquals("20", lines[0]);
+//        assertEquals("20", lines[1]);
+//        assertEquals("22", lines[2]);
+//        assertEquals("33", lines[3]);
+    }
+
+    @Test
+    void test () throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("W(T1, x1,5)");
+        instructions.add("R(T2, x1)");
+        instructions.add("R(T1, x1)");
+        instructions.add("W(T1, x1, 6)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+
+        Driver.executeFromList(instructions);
+        String[] lines = baos.toString().split("\n");
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+        System.out.println(Arrays.toString(lines));
+//        assertEquals("20", lines[0]);
+//        assertEquals("20", lines[1]);
+//        assertEquals("22", lines[2]);
+//        assertEquals("33", lines[3]);
+    }
+
 }

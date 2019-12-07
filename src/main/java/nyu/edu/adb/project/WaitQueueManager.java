@@ -3,11 +3,11 @@ package nyu.edu.adb.project;
 import java.util.*;
 import java.util.stream.Collectors;
 
-class DataManager {
+class WaitQueueManager {
     Map<String, List<Operation>> variableWaitQueueMap;
     List<String> listOfVariables;
 
-    DataManager() {
+    WaitQueueManager() {
         variableWaitQueueMap = new HashMap<>();
         listOfVariables = new ArrayList<>();
     }

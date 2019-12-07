@@ -9,16 +9,16 @@ public class Database {
     int cycleDetectionInterval = 1;
     TransactionManager transactionManager;
     SiteManager siteManager;
-    DataManager dataManager;
+    WaitQueueManager waitQueueManager;
     private final int NUMBER_OF_SITES = 10;
     private final static Logger LOGGER =
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     Database() {
         tickTime = 0;
-        dataManager = new DataManager();
+        waitQueueManager = new WaitQueueManager();
         siteManager = new SiteManager(NUMBER_OF_SITES);
-        transactionManager = new TransactionManager(siteManager, dataManager);
+        transactionManager = new TransactionManager(siteManager, waitQueueManager);
         siteManager.setTransactionManager(transactionManager);
         initialize();
     }
