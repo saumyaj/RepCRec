@@ -4,122 +4,78 @@ import java.util.*;
 
 public class Site {
 
-    private final Map<String, Integer> dataMap;
-    private final Map<String, Map<Long, Integer>> writeHistory;
-    private final Set<String> unsafeVariablesForReading;
     private final int id;
-    private final LockTable lockTable;
+
+    private final DataManager dataManager;
 
     public Site(int id) {
-        dataMap = new HashMap<>();
-        unsafeVariablesForReading = new HashSet<>();
         this.id = id;
-        lockTable = new LockTable();
-        writeHistory = new HashMap<>();
+        this.dataManager = new DataManager();
     }
 
     public Integer read(String variableName) {
-        if (!dataMap.containsKey(variableName)) {
-            throw new RuntimeException("Site does not contain variable");
-        }
-        return dataMap.get(variableName);
+        return dataManager.read(variableName);
     }
 
     public Optional<Integer> readForRO(String variableName, Long tickTime) {
-        if (!dataMap.containsKey(variableName)) {
-            throw new RuntimeException("Site does not contain variable");
-        }
-        Map<Long, Integer> variableHistory = writeHistory.get(variableName);
-        if (variableHistory.containsKey(tickTime)) {
-            return Optional.of(variableHistory.get(tickTime));
-        }
-        return Optional.empty();
+        return dataManager.readForRO(variableName, tickTime);
     }
 
     public void write(String variableName, int val, long tickTime) {
-        if (!dataMap.containsKey(variableName)) {
-            throw new RuntimeException("Site does not contain variable");
-        }
-        dataMap.put(variableName, val);
-        Map<Long, Integer> variableHistory = writeHistory.get(variableName);
-        variableHistory.put(tickTime, val);
-
-        if (unsafeVariablesForReading.contains(variableName)) {
-            unsafeVariablesForReading.remove(variableName);
-        }
+        dataManager.write(variableName, val, tickTime);
     }
 
     public boolean isVariableSafeForRead(String variableName) {
-        if (unsafeVariablesForReading.contains(variableName)) {
-            return false;
-        }
-        return true;
+        return dataManager.isVariableSafeForRead(variableName);
     }
 
     public void clearStaleSet() {
-        unsafeVariablesForReading.clear();
+        dataManager.clearStaleSet();
     }
 
     public void addVariableToStaleSet(String variableName) {
-        if (dataMap.containsKey(variableName)) {
-            unsafeVariablesForReading.add(variableName);
-        } else {
-            throw new RuntimeException("this variable is not present at this site");
-        }
+        dataManager.addVariableToStaleSet(variableName);
     }
 
     public void initializeVar(String variableName, int val) {
-        dataMap.put(variableName, val);
-
-        Map<Long, Integer> variableHistory = new HashMap<>();
-        variableHistory.put(Long.valueOf(0), val);
-
-        writeHistory.put(variableName, variableHistory);
+        dataManager.initializeVar(variableName, val);
     }
 
     public boolean releaseReadLock(String variableName, String transactionName) {
-        return lockTable.releaseReadLock(variableName, transactionName);
+        return dataManager.releaseReadLock(variableName, transactionName);
     }
 
     public boolean releaseWriteLock(String variableName) {
-        return lockTable.releaseWriteLock(variableName);
+        return dataManager.releaseWriteLock(variableName);
     }
 
     public boolean getReadLock(String variableName, String transactionId) {
-        return lockTable.addReadLock(variableName, transactionId);
+        return dataManager.getReadLock(variableName, transactionId);
     }
 
     public boolean getWriteLock(String variableName, String transactionId) {
-        return lockTable.addWriteLock(variableName, transactionId);
+        return dataManager.getWriteLock(variableName, transactionId);
     }
 
     public void clearAllLocks() {
-        lockTable.clearLockTable();
+        dataManager.clearAllLocks();
     }
 
     Optional<String> getWriteLockHolder(String variableName) {
-        return lockTable.getWriteLockHolder(variableName);
+        return dataManager.getWriteLockHolder(variableName);
+
     }
 
     List<String> getReadLockHolders(String variableName) {
-        return lockTable.getReadLockHolders(variableName);
+        return dataManager.getReadLockHolders(variableName);
     }
 
     public void dumpSite() {
-        StringBuffer sb = new StringBuffer();
-        sb.append("site " + id + " - ");
-        String[] variableList = new String[dataMap.size()];
-        dataMap.keySet().toArray(variableList);
-        Arrays.sort(variableList, Comparator.comparingInt((String a) -> Integer.parseInt(a.substring(1))));
-        for (String variableName : variableList) {
-            int val = dataMap.get(variableName);
-            sb.append(variableName + ":" + val + ", ");
-        }
-        System.out.println(sb.toString());
+        dataManager.dumpSite(id);
     }
 
     public boolean isWriteLockAvailable(String variableName, String transactionId) {
-        return lockTable.isWriteLockAvailable(variableName, transactionId);
+        return dataManager.isWriteLockAvailable(variableName, transactionId);
     }
 
 }
