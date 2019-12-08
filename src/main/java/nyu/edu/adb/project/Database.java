@@ -83,9 +83,11 @@ public class Database {
 
         String[] params = paramsString.split(",");
         if (params.length == 2) {
-            Optional<Integer> readValue = transactionManager.read( params[0].trim(), params[1].trim());
+            String variableName = params[1].trim();
+            Optional<Integer> readValue = transactionManager.read( params[0].trim(), variableName);
             if(readValue.isPresent()) {
-                System.out.println(readValue.get());
+                System.out.println(params[1].trim() + ": " + readValue.get());
+//                System.out.println(readValue.get());
             } else {
                 LOGGER.log(Level.INFO, "read failed for transaction " + params[0].trim());
 //                System.out.println("read failed");

@@ -45,7 +45,8 @@ public class TransactionManager {
         ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
         releaseResourcesOfReadWriteTransaction(readWriteTransaction);
 
-        transactionMap.remove(transactionName);
+//        transactionMap.remove(transactionName);
+        readWriteTransaction.setAborted(true);
     }
 
     private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
@@ -254,7 +255,8 @@ public class TransactionManager {
                     Long tickTime = readOnlyTransaction.getVariableTickTIme(variableName);
                     Optional<Integer> readValue = siteManager.readForROFromSpecificSite(variableName, tickTime, siteId);
                     if (readValue.isPresent()) {
-                        System.out.println(readValue.get());
+                        System.out.println(variableName + ": " + readValue.get());
+//                        System.out.println(readValue.get());
                     }
                 }
             }
@@ -313,7 +315,8 @@ public class TransactionManager {
                 readWriteTransaction.addReadLock(variableName, siteId.get());
                 readWriteTransaction.addAccessedSite(siteId.get());
                 Optional<Integer> value = siteManager.read(variableName, siteId.get());
-                System.out.println(value.get());
+                System.out.println(variableName + ": " + value.get());
+//                System.out.println(value.get());
             }
 
         }

@@ -43,8 +43,8 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("101", lines[0]);
-        assertEquals("102", lines[1]);
+        assertEquals("x1: 101", lines[0]);
+        assertEquals("x2: 102", lines[1]);
     }
 
     // No aborts happens, since read-only transactions use
@@ -69,10 +69,10 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("20", lines[0]);
-        assertEquals("10", lines[1]);
-        assertEquals("101", lines[2]);
-        assertEquals("102", lines[3]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x1: 10", lines[1]);
+        assertEquals("x1: 101", lines[2]);
+        assertEquals("x2: 102", lines[3]);
     }
 
 
@@ -100,10 +100,10 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("30", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("88", lines[2]);
-        assertEquals("91", lines[3]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 88", lines[2]);
+        assertEquals("x5: 91", lines[3]);
     }
 
     // Now T1 aborts, since site 2 died after T1 accessed it. T2 ok.
@@ -131,10 +131,10 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 
-        assertEquals("10", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("50", lines[2]);
-        assertEquals("88", lines[3]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x5: 50", lines[2]);
+        assertEquals("x8: 88", lines[3]);
     }
 
     // T1 fails again here because it wrote to a site that failed. T2 ok.
@@ -160,10 +160,10 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("30", lines[0]);
-        assertEquals("50", lines[1]);
-        assertEquals("60", lines[2]);
-        assertEquals("88", lines[3]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x5: 50", lines[1]);
+        assertEquals("x6: 60", lines[2]);
+        assertEquals("x8: 88", lines[3]);
     }
 
     // T1 ok. T2 ok. T2 reads from a recovering site, but odd variables only
@@ -190,9 +190,9 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("10", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("88", lines[2]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 88", lines[2]);
     }
 
     // T2 still reads the initial value of x3
@@ -216,10 +216,10 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("10", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("30", lines[2]);
-        assertEquals("33", lines[3]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x3: 30", lines[2]);
+        assertEquals("x3: 33", lines[3]);
     }
 
     // T1, T2, T3 ok. Read from T3 waits for T2 to finish
@@ -244,8 +244,8 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("44", lines[0]);
-        assertEquals("22", lines[1]);
+        assertEquals("x4: 44", lines[0]);
+        assertEquals("x2: 22", lines[1]);
 //        assertEquals("30", lines[2]);
 //        assertEquals("33", lines[3]);
     }
@@ -271,8 +271,8 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("44", lines[0]);
-        assertEquals("22", lines[1]);
+        assertEquals("x4: 44", lines[0]);
+        assertEquals("x2: 22", lines[1]);
 //        assertEquals("30", lines[2]);
 //        assertEquals("33", lines[3]);
     }
@@ -295,9 +295,9 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("20", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("22", lines[2]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x2: 22", lines[2]);
 //        assertEquals("33", lines[3]);
     }
 
@@ -320,9 +320,9 @@ public class Test2 {
         String[] lines = baos.toString().split("\n");
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 //        System.out.println(Arrays.toString(lines));
-        assertEquals("20", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("22", lines[2]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x2: 22", lines[2]);
 //        assertEquals("33", lines[3]);
     }
 

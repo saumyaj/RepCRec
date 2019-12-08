@@ -32,7 +32,7 @@ public class Test1 {
         instructions.add("end(T1)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("69", lines[0]);
+        assertEquals("x1: 69", lines[0]);
     }
 
     @Test
@@ -48,9 +48,9 @@ public class Test1 {
         instructions.add("end(T1)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("69", lines[0]);
-        assertEquals("77", lines[1]);
-        assertEquals("25", lines[2]);
+        assertEquals("x1: 69", lines[0]);
+        assertEquals("x1: 77", lines[1]);
+        assertEquals("x1: 25", lines[2]);
     }
 
     @Test
@@ -65,9 +65,9 @@ public class Test1 {
         instructions.add("end(T1)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("10", lines[0]);
-        assertEquals("70", lines[1]);
-        assertEquals("70", lines[2]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x1: 70", lines[1]);
+        assertEquals("x1: 70", lines[2]);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class Test1 {
         instructions.add("end(T1)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("10", lines[0]);
+        assertEquals("x1: 10", lines[0]);
     }
 
     @Test
@@ -93,7 +93,7 @@ public class Test1 {
         instructions.add("end(T1)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
+        assertEquals("x2: 20", lines[0]);
     }
 
     @Test
@@ -108,7 +108,7 @@ public class Test1 {
         Driver.executeFromList(database, instructions);
 
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
+        assertEquals("x2: 20", lines[0]);
         assertTrue(database.transactionManager.abortedTransactions.contains("T1"));
     }
 
@@ -124,7 +124,7 @@ public class Test1 {
         Driver.executeFromList(database, instructions);
 
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
+        assertEquals("x2: 20", lines[0]);
         assertFalse(database.transactionManager.abortedTransactions.contains("T1"));
     }
 
@@ -143,7 +143,7 @@ public class Test1 {
         Driver.executeFromList(database, instructions);
 
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
+        assertEquals("x2: 20", lines[0]);
         assertTrue(database.transactionManager.abortedTransactions.contains("T1"));
     }
 
@@ -173,7 +173,7 @@ public class Test1 {
         instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("1000", lines[0]);
+        assertEquals("x1: 1000", lines[0]);
     }
 
     @Test
@@ -187,7 +187,7 @@ public class Test1 {
         instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("1000", lines[0]);
+        assertEquals("x1: 1000", lines[0]);
     }
 
     @Test
@@ -201,7 +201,7 @@ public class Test1 {
         instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("10", lines[0]);
+        assertEquals("x1: 10", lines[0]);
     }
 
     @Test
@@ -218,7 +218,7 @@ public class Test1 {
         instructions.add("end(T3)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("10", lines[0]);
+        assertEquals("x1: 10", lines[0]);
     }
 
     @Test
@@ -234,8 +234,8 @@ public class Test1 {
         instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
-        assertEquals("10", lines[1]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x1: 10", lines[1]);
     }
 
     @Test
@@ -251,8 +251,8 @@ public class Test1 {
         instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("20", lines[0]);
-        assertEquals("10", lines[1]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x1: 10", lines[1]);
     }
 
     @Test
@@ -272,28 +272,22 @@ public class Test1 {
 //        instructions.add("end(T2)");
         Driver.executeFromList(instructions);
         String[] lines = baos.toString().split("\n");
-        assertEquals("1000", lines[0]);
-        assertEquals("1001", lines[1]);
+        assertEquals("x1: 1000", lines[0]);
+        assertEquals("x2: 1001", lines[1]);
 //        assertEquals("10", lines[1]);
     }
 
     // TODO - Rename this to what it is testing
     @Test
-    void testingTest() throws Exception {
+    void testWaitingAndReadingWrittenValue() throws Exception {
         List<String> instructions = new ArrayList<>();
 
         instructions.add("begin(T1)");
         instructions.add("begin(T2)");
-//        instructions.add("begin(T3)");
         instructions.add("R(T1, x1)");
         instructions.add("W(T2, x1, -1)");
         instructions.add("end(T1)");
-//        instructions.add("R(T3, x1)");
         instructions.add("R(T2, x1)");
-//        instructions.add("W(T3, x1, -2)");
-//        instructions.add("fail(1)");
-//        instructions.add("recover(1)");
-//        instructions.add("end(T3)");
         instructions.add("end(T2)");
         instructions.add("dump()");
 
@@ -302,9 +296,9 @@ public class Test1 {
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
         String[] lines = baos.toString().split("\n");
 
-//        System.out.println(baos);
-        assertEquals("10", lines[0]);
-        assertEquals("-1", lines[1]);
+        System.out.println(Arrays.toString(lines));
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x1: -1", lines[1]);
     }
 
     @Test
@@ -322,8 +316,8 @@ public class Test1 {
 //        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
         String[] lines = baos.toString().split("\n");
 
-        assertEquals("20", lines[0]);
-        assertEquals("10", lines[1]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x1: 10", lines[1]);
     }
 
     // T1 should not abort because its site did not fail.
@@ -348,9 +342,9 @@ public class Test1 {
 //        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
         String[] lines = baos.toString().split("\n");
 
-        assertEquals("30", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("88", lines[2]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 88", lines[2]);
     }
 
 
@@ -392,10 +386,10 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("30", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("80", lines[2]);
-        assertEquals("91", lines[3]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 80", lines[2]);
+        assertEquals("x4: 91", lines[3]);
     }
 
     // T1 should not abort because site 4 did not fail.
@@ -433,10 +427,10 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("30", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("80", lines[2]);
-        assertEquals("91", lines[3]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 80", lines[2]);
+        assertEquals("x4: 91", lines[3]);
     }
 
     // Now T1 aborts, since site 2 died after T1 accessed it. T2 ok.
@@ -463,9 +457,9 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("10", lines[0]);
-        assertEquals("30", lines[1]);
-        assertEquals("88", lines[2]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x3: 30", lines[1]);
+        assertEquals("x8: 88", lines[2]);
     }
 
     // T1 fails again here because it wrote to a site that failed. T2 ok.
@@ -493,9 +487,9 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("30", lines[0]);
-        assertEquals("10", lines[1]);
-        assertEquals("60", lines[2]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x1: 10", lines[1]);
+        assertEquals("x6: 60", lines[2]);
     }
 
 
@@ -522,11 +516,8 @@ public class Test1 {
         Driver.executeFromList(instructions);
 //        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
         String[] lines = baos.toString().split("\n");
-
-//        System.out.println(Arrays.toString(lines));
-
-        assertEquals("10", lines[0]);
-        assertEquals("30", lines[1]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x3: 30", lines[1]);
     }
 
     // T2 should read the initial version of x3 based on multiversion read
@@ -554,10 +545,10 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("10", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("30", lines[2]);
-        assertEquals("33", lines[3]);
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x3: 30", lines[2]);
+        assertEquals("x3: 33", lines[3]);
     }
 
 
@@ -583,8 +574,8 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("44", lines[0]);
-        assertEquals("22", lines[1]);
+        assertEquals("x4: 44", lines[0]);
+        assertEquals("x2: 22", lines[1]);
     }
 
     // T3 should wait and should not abort
@@ -609,8 +600,8 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("44", lines[0]);
-        assertEquals("22", lines[1]);
+        assertEquals("x4: 44", lines[0]);
+        assertEquals("x2: 22", lines[1]);
     }
 
     // All should commit
@@ -632,9 +623,9 @@ public class Test1 {
 
         System.out.println(Arrays.toString(lines));
 
-        assertEquals("20", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("22", lines[2]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x2: 22", lines[2]);
     }
 
     // both commit
@@ -659,9 +650,9 @@ public class Test1 {
 
         System.out.println(Arrays.toString(lines));
 
-        assertEquals("20", lines[0]);
-        assertEquals("20", lines[1]);
-        assertEquals("10", lines[2]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x2: 20", lines[1]);
+        assertEquals("x2: 10", lines[2]);
     }
 
     // T1 and T2 wait but eventually commit
@@ -687,7 +678,7 @@ public class Test1 {
 
         System.out.println(Arrays.toString(lines));
 
-        assertEquals("3", lines[0]);
+        assertEquals("x2: 3", lines[0]);
     }
 
 
@@ -725,7 +716,7 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("77", lines[0]);
+        assertEquals("x4: 77", lines[0]);
     }
 
 
@@ -749,8 +740,8 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("44", lines[0]);
-        assertEquals("22", lines[1]);
+        assertEquals("x4: 44", lines[0]);
+        assertEquals("x2: 22", lines[1]);
 
     }
 
@@ -781,8 +772,8 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("44", lines[0]);
-        assertEquals("20", lines[1]);
+        assertEquals("x3: 44", lines[0]);
+        assertEquals("x2: 20", lines[1]);
 
     }
 
@@ -824,16 +815,16 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("30", lines[0]);
-        assertEquals("40", lines[1]);
-        assertEquals("50", lines[2]);
-        assertEquals("10", lines[3]);
-        assertEquals("20", lines[4]);
-        assertEquals("10", lines[5]);
-        assertEquals("22", lines[6]);
-        assertEquals("33", lines[7]);
-        assertEquals("44", lines[8]);
-        assertEquals("55", lines[9]);
+        assertEquals("x3: 30", lines[0]);
+        assertEquals("x4: 40", lines[1]);
+        assertEquals("x5: 50", lines[2]);
+        assertEquals("x1: 10", lines[3]);
+        assertEquals("x2: 20", lines[4]);
+        assertEquals("x1: 10", lines[5]);
+        assertEquals("x2: 22", lines[6]);
+        assertEquals("x3: 33", lines[7]);
+        assertEquals("x4: 44", lines[8]);
+        assertEquals("x5: 55", lines[9]);
     }
 
 
@@ -882,11 +873,11 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("11", lines[5]);
-        assertEquals("22", lines[6]);
-        assertEquals("33", lines[7]);
-        assertEquals("40", lines[8]);
-        assertEquals("55", lines[9]);
+        assertEquals("x1: 11", lines[5]);
+        assertEquals("x2: 22", lines[6]);
+        assertEquals("x3: 33", lines[7]);
+        assertEquals("x4: 40", lines[8]);
+        assertEquals("x5: 55", lines[9]);
 
     }
 
@@ -925,7 +916,7 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("90", lines[0]);
+        assertEquals("x2: 90", lines[0]);
 //        assertEquals("20", lines[1]);
 
     }
@@ -953,9 +944,39 @@ public class Test1 {
 
 //        System.out.println(Arrays.toString(lines));
 
-        assertEquals("20", lines[0]);
-        assertEquals("202", lines[1]);
+        assertEquals("x2: 20", lines[0]);
+        assertEquals("x2: 202", lines[1]);
 
+    }
+
+    // T2 can't read x2 from site 1, so doesn't get a lock on x2 at site 1
+    // T5 doesn't need to wait because T2 doesn't hold a lock since site 1 can't respond to the read.
+    @Test
+    void testDeadlockAbortionWithWaiting() throws Exception {
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("begin(T3)");
+        instructions.add("W(T1,x1,5)");
+        instructions.add("W(T3,x2,32)");
+        instructions.add("W(T2,x1,17)");
+        instructions.add("end(T1)");
+        instructions.add("begin(T4)");
+        instructions.add("W(T4,x4,35)");
+        instructions.add("W(T3,x5,21)");
+        instructions.add("W(T4,x2,21)");
+        instructions.add("W(T3,x4,23)");
+        instructions.add("end(T2)");
+        instructions.add("end(T3)");
+        instructions.add("end(T4)");
+        instructions.add("dump()");
+
+        Database database = new Database();
+        Driver.executeFromList(database, instructions);
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+        String[] lines = baos.toString().split("\n");
+        System.out.println(Arrays.toString(lines));
+        assertTrue(database.transactionManager.abortedTransactions.contains("T4"));
     }
 
 }
