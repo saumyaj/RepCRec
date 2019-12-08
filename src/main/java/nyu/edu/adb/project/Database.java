@@ -112,7 +112,7 @@ public class Database {
         if(params.length == 1) {
             int siteId = Integer.parseInt(params[0].trim());
             siteManager.failSite(siteId);
-            transactionManager.checkTransactionsForAbortion(siteId);
+            transactionManager.checkTransactionsForAbortionAfterSiteFailure(siteId);
         } else {
             throw new IllegalArgumentException("fail operation must have one argument");
         }

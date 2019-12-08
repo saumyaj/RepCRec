@@ -27,12 +27,12 @@ public class TransactionManager {
         while (cycles.size() > 0) {
             LOGGER.log(Level.INFO, "cycle found");
             String transactionToBeAborted = findYoungestTransaction(cycles);
-            abortTransaction(transactionToBeAborted);
+            abortTransactionAfterDeadlock(transactionToBeAborted);
             cycles = deadLockManager.getDeadLockCycles();
         }
     }
 
-    private void abortTransaction(String transactionName) {
+    private void abortTransactionAfterDeadlock(String transactionName) {
         LOGGER.log(Level.INFO, "aborting transaction " + transactionName);
         deadLockManager.removeNode(transactionName);
         waitQueueManager.removeAllPendingOperationOfTransaction(transactionName);
@@ -45,8 +45,12 @@ public class TransactionManager {
         ReadWriteTransaction readWriteTransaction = (ReadWriteTransaction) transaction;
         releaseResourcesOfReadWriteTransaction(readWriteTransaction);
 
-//        transactionMap.remove(transactionName);
-        readWriteTransaction.setAborted(true);
+        abortedTransactions.add(transactionName);
+        transactionMap.remove(transactionName);
+//        readWriteTransaction.setAborted(true);
+//        readWriteTransaction.setAbortReason("Deadlock removal");
+        System.out.println(transactionName + " " + "aborts");
+        System.out.println("Reason for abortion: " + "Deadlock removal");
     }
 
     private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
@@ -264,12 +268,21 @@ public class TransactionManager {
     }
 
     public void endTransaction(String transactionName, long tickTime) {
+        if (!transactionMap.containsKey(transactionName)) {
+            LOGGER.log(Level.INFO, "Transaction " + transactionName + " not found in Transaction Map");
+            return;
+        }
         boolean wasCommitted = commitTransaction(transactionName, tickTime);
         if (wasCommitted) {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " committed successfully");
+            System.out.println(transactionName + " commits");
         } else {
-            LOGGER.log(Level.INFO, "Transaction " + transactionName + " was aborted");
+            //read only transactions never abort, so this must be a read-write transaction
+            ReadWriteTransaction transaction = (ReadWriteTransaction) transactionMap.get(transactionName);
             abortedTransactions.add(transactionName);
+            LOGGER.log(Level.INFO, "Transaction " + transactionName + " was aborted");
+            System.out.println(transactionName + " aborts");
+            System.out.println("Reason for abortion: Site failure");
         }
         transactionMap.remove(transactionName);
     }
@@ -362,7 +375,7 @@ public class TransactionManager {
         return true;
     }
 
-    public void checkTransactionsForAbortion(int siteId) {
+    public void checkTransactionsForAbortionAfterSiteFailure(int siteId) {
         for (Transaction transaction : transactionMap.values()) {
             if (transaction instanceof ReadOnlyTransaction) {
                 return;
