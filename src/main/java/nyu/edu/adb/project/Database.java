@@ -29,6 +29,7 @@ class Database {
         transactionManager = new TransactionManager(siteManager, waitQueueManager);
         siteManager.setTransactionManager(transactionManager);
         initialize();
+        LOGGER.setLevel(Level.WARNING);
     }
 
     /**

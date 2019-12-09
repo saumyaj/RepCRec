@@ -6,7 +6,9 @@ import java.util.Scanner;
 
 public class Driver {
     public static void main(String[] args) throws Exception {
-        executeFromFile("tests.txt");
+        for(String arg: args) {
+            executeFromFile(arg);
+        }
     }
 
     /**
