@@ -9,6 +9,11 @@ public class Driver {
         executeFromFile("tests.txt");
     }
 
+    /**
+     * Executes the instructions from given file in a database
+     * @param filename name of the file
+     * @author Omkar
+     */
     public static void executeFromFile(String filename) throws Exception {
         Scanner sc = new Scanner(new File(filename));
         Database database = new Database();
@@ -19,6 +24,12 @@ public class Driver {
 //        database.dump();
     }
 
+    /**
+     * Executes list of instructions in a new database
+     * @param instructions The list to execute
+     * @throws Exception
+     * @author Omkar
+     */
     public static void executeFromList(List<String> instructions) throws Exception {
         Database database = new Database();
         for (String s: instructions) {
@@ -26,6 +37,12 @@ public class Driver {
         }
     }
 
+    /**
+     * Executes list of instructions in given database
+     * @param instructions The list to execute
+     * @throws Exception
+     * @author Omkar
+     */
     public static void executeFromList(Database database, List<String> instructions) throws Exception {
         for (String s: instructions) {
             database.handleQuery(s);

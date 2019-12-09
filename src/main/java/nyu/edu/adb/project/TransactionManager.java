@@ -22,6 +22,10 @@ class TransactionManager {
         this.deadLockManager = new DeadLockManager();
     }
 
+    /**
+     * Performs deadlock detection and checks for cycles in waits-for graph
+     * @author Saumya
+     */
     void runDeadLockDetection() {
         List<List<String>> cycles = deadLockManager.getDeadLockCycles();
         while (cycles.size() > 0) {
@@ -32,6 +36,10 @@ class TransactionManager {
         }
     }
 
+    /**
+     * Aborts transaction in order to resolve deadlock
+     * @author Saumya
+     */
     private void abortTransactionAfterDeadlock(String transactionName) {
         LOGGER.log(Level.INFO, "aborting transaction " + transactionName);
         deadLockManager.removeNode(transactionName);
@@ -51,6 +59,10 @@ class TransactionManager {
         System.out.println("Reason for abortion: Deadlock removal");
     }
 
+    /**
+     * Finds youngest transaction in the list of cycles
+     * @author Saumya
+     */
     private String findYoungestTransaction(List<List<String>> cycles) {
         String youngestTransaction = null;
         long yougestAge = Long.MIN_VALUE;
@@ -66,12 +78,20 @@ class TransactionManager {
         return youngestTransaction;
     }
 
+    /**
+     * Creates a new Read Write Transaction
+     * @author Saumya
+     */
     void createReadWriteTransaction(String transactionName, long tickTime) {
         validateTransactionName(transactionName);
         Transaction transaction = new ReadWriteTransaction(transactionName, tickTime);
         transactionMap.put(transactionName, transaction);
     }
 
+    /**
+     * Creates a new Read-Only Transaction
+     * @author Omkar
+     */
     void createReadOnlyTransaction(String transactionName, long tickTime) {
         validateTransactionName(transactionName);
 
@@ -79,12 +99,20 @@ class TransactionManager {
         transactionMap.put(transactionName, transaction);
     }
 
+    /**
+     * Validates the name of the transaction
+     * @author Saumya
+     */
     private void validateTransactionName(String transactionName) throws IllegalArgumentException {
         if (transactionMap.containsKey(transactionName)) {
             throw new IllegalArgumentException("Transaction with name " + transactionName + " already exists");
         }
     }
 
+    /**
+     * Performs a write for given transaction if possible or adds to wait queue according to two-phase locking
+     * @author Saumya
+     */
     void write(String transactionName, String variableName, int value) {
         ReadWriteTransaction t;
         if (!(transactionMap.get(transactionName) instanceof ReadWriteTransaction)) {
@@ -110,6 +138,10 @@ class TransactionManager {
         handleWaitingForOperation(variableName, transactionName, value);
     }
 
+    /**
+     * Updates waits-for graph and adds read operation to queue
+     * @author Saumya
+     */
     private void handleWaitingForOperation(String variableName, String transactionName) {
         Optional<String> lastWriteTransactionFromWaitQueue = waitQueueManager.getLastWriteTransaction(variableName);
 
@@ -124,6 +156,10 @@ class TransactionManager {
                 new Operation(transactionName, Operation.OperationType.READ, variableName));
     }
 
+    /**
+     * Updates waits-for graph and adds write operation to queue
+     * @author Saumya
+     */
     private void handleWaitingForOperation(String variableName, String transactionName, int value) {
         LOGGER.log(Level.INFO, "Adding write operation for " + transactionName + " to the wait queue");
         Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
@@ -141,6 +177,11 @@ class TransactionManager {
                 new Operation(transactionName, Operation.OperationType.WRITE, variableName, value));
     }
 
+    /**
+     * Tries to perform a read for given transaction and variable. Returns the integer value of the required variable
+     * or returns null if the variable is unavailable
+     * @author Saumya
+     */
     Optional<Integer> read(String transactionName, String variableName) {
         if (transactionMap.get(transactionName) instanceof ReadOnlyTransaction) {
             return readFromReadOnlyTransaction(transactionMap.get(transactionName), variableName);
@@ -150,8 +191,9 @@ class TransactionManager {
         return readFromReadWriteTransaction(readWriteTransaction, variableName);
     }
 
-    /*
-     * This method returns the integer value of the required variable or returns null if the variable is unavailable
+    /**
+     * Tries to perform a read for Read-Write transaction
+     * @author Saumya
      */
     private Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction readWriteTransaction,
                                                            String variableName) {
@@ -200,6 +242,10 @@ class TransactionManager {
         return Optional.empty();
     }
 
+    /**
+     * Tries to perform a read for Read-Only transaction
+     * @author Omkar
+     */
     private Optional<Integer> readFromReadOnlyTransaction(Transaction transaction, String variableName) {
         ReadOnlyTransaction readOnlyTransaction = (ReadOnlyTransaction) transaction;
         Long tickTime = readOnlyTransaction.getVariableTickTIme(variableName);
@@ -210,6 +256,10 @@ class TransactionManager {
         return val;
     }
 
+    /**
+     * Checks if any Read only transactions are waiting for a particular site recovery and executes the reads if possible
+     * @author Omkar
+     */
     void checkROTransactionsForWaitingOperations(int siteId) {
         for (String transactionName : transactionMap.keySet()) {
             Transaction transaction = transactionMap.get(transactionName);
@@ -225,6 +275,10 @@ class TransactionManager {
         }
     }
 
+    /**
+     * Ends the given transaction and commits it if possible
+     * @author Omkar
+     */
     void endTransaction(String transactionName, long tickTime) {
         if (!transactionMap.containsKey(transactionName)) {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " not found in Transaction Map");
@@ -245,6 +299,10 @@ class TransactionManager {
         transactionMap.remove(transactionName);
     }
 
+    /**
+     * Performs any waiting operations for given variable
+     * @author Saumya
+     */
     void processWaitingOperationsIfAny(String variableName) {
         Optional<Operation> nextOp = waitQueueManager.peekAtNextWaitingOperation(variableName);
         if (!nextOp.isPresent()) {
@@ -291,6 +349,10 @@ class TransactionManager {
         }
     }
 
+    /**
+     * Releases all locks and waiting operations for Read Write transaction
+     * @author Saumya
+     */
     private void releaseResourcesOfReadWriteTransaction(ReadWriteTransaction readWriteTransaction) {
 
         Set<String> writeLockVariablesSet = readWriteTransaction.getWriteLocks().keySet();
@@ -310,6 +372,10 @@ class TransactionManager {
         }
     }
 
+    /**
+     * Commits the given transaction if possible
+     * @author Saumya
+     */
     private boolean commitTransaction(String transactionName, long tickTime) {
         Transaction transaction = transactionMap.get(transactionName);
         deadLockManager.removeNode(transactionName);
@@ -331,6 +397,10 @@ class TransactionManager {
         return true;
     }
 
+    /**
+     * Checks if a transaction should be aborted because of failure of accessed site
+     * @author Omkar
+     */
     void checkTransactionsForAbortionAfterSiteFailure(int siteId) {
         for (Transaction transaction : transactionMap.values()) {
             if (transaction instanceof ReadOnlyTransaction) {

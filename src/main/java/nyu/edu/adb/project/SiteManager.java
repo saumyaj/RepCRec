@@ -2,8 +2,6 @@ package nyu.edu.adb.project;
 
 import java.util.*;
 
-
-// TODO - This class should handle the decision of which variable copies are safe to read after recovery
 class SiteManager {
     enum Status {
         UP, DOWN
@@ -29,12 +27,20 @@ class SiteManager {
         lastWriteMap = new HashMap<>();
     }
 
+    /**
+     * Clears all locks of the given site and sets its status to DOWN
+     * @author Saumya
+     */
     void failSite(int siteId) {
         Site site = siteMap.get(siteId);
         site.clearAllLocks();
         siteStatusMap.put(siteId, Status.DOWN);
     }
 
+    /**
+     * Performs the process of site recovery, updating stale set of variables and checking for any waiting operations
+     * @author Omkar
+     */
     public void recoverSite(int siteId) {
         siteStatusMap.put(siteId, Status.UP);
         Site site = siteMap.get(siteId);
@@ -49,9 +55,10 @@ class SiteManager {
         transactionManager.checkROTransactionsForWaitingOperations(siteId);
     }
 
-    /*
+    /**
      * This function tries to get read lock on first possible site and returns its id or returns null if no site is
      * available.
+     * @author Saumya
      */
     Optional<Integer> getReadLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
@@ -63,11 +70,14 @@ class SiteManager {
                     && site.getReadLock(variableName, transactionId)) {
                 return Optional.of(siteId);
             }
-
         }
         return Optional.empty();
     }
 
+    /**
+     * Checks if all up sites can provide write locks
+     * @author Saumya
+     */
     public boolean canAllUpSitesProvideWriteLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         for (Integer siteId : listOfSiteIds) {
@@ -81,8 +91,8 @@ class SiteManager {
     }
 
     /**
-     * @param variableName
-     * @return List of site ids where the write lock was successfully acquired
+     * Checks and returns the site ids where the write lock was successfully acquired
+     * @author Saumya
      */
     public List<Integer> getWriteLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIdWhereLockAcquired = new ArrayList<>();
@@ -107,6 +117,10 @@ class SiteManager {
         return listOfSiteIdWhereLockAcquired;
     }
 
+    /**
+     * Issues a read for given variable on a particular site
+     * @author Omkar
+     */
     public Optional<Integer> read(String variableName, int siteId) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.DOWN)) {
@@ -115,6 +129,10 @@ class SiteManager {
         return Optional.of(site.read(variableName));
     }
 
+    /**
+     * Issues a read for given variable and tickTime for a read only transaction
+     * @author Omkar
+     */
     public Optional<Integer> readForRO(String variableName, Long tickTime) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         for (int siteId : listOfSiteIds) {
@@ -129,6 +147,10 @@ class SiteManager {
         return Optional.empty();
     }
 
+    /**
+     * Issues a read for given variable on a particular site with particular tickTime for a read only transaction
+     * @author Omkar
+     */
     public Optional<Integer> readForROFromSpecificSite(String variableName, Long tickTime, int siteId) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
@@ -137,6 +159,10 @@ class SiteManager {
         return Optional.empty();
     }
 
+    /**
+     * Commits writes for given variables and locks acquired
+     * @author Omkar
+     */
     public void commitWrites(Map<String, Integer> modifiedVariables, Map<String, List<Integer>> writeLocks,
                              long tickTime) {
         for (String variableName : modifiedVariables.keySet()) {
@@ -152,6 +178,10 @@ class SiteManager {
         }
     }
 
+    /**
+     * Transfers a release read lock call to particular site
+     * @author Saumya
+     */
     public void releaseReadLock(String variableName, int siteId, String transactionName) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
@@ -159,6 +189,10 @@ class SiteManager {
         }
     }
 
+    /**
+     * Transfers a release write lock call to particular site
+     * @author Omkar
+     */
     public void releaseWriteLock(String variableName, int siteId) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
@@ -166,6 +200,10 @@ class SiteManager {
         }
     }
 
+    /**
+     * Finds the write lock holder for given variable
+     * @author Saumya
+     */
     Optional<String> getWriteLockHolder(String variableName) {
         List<Integer> siteIds = variableToSiteIdMap.get(variableName);
         Optional<String> writeLockHolder = Optional.empty();
@@ -180,6 +218,10 @@ class SiteManager {
         return writeLockHolder;
     }
 
+    /**
+     * Finds the read lock holder for given variable
+     * @author Saumya
+     */
     List<String> getReadLockHolders(String variableName) {
         List<Integer> siteIds = variableToSiteIdMap.get(variableName);
         List<String> readLockHolders = new ArrayList<>();
@@ -192,6 +234,10 @@ class SiteManager {
         return readLockHolders;
     }
 
+    /**
+     * Updates the data in the sites and variable to site mapping along with some initialization
+     * @author Omkar
+     */
     void initializeVariables() {
         final int NUMBER_OF_VARIABLES = 20;
         for (int var = 1; var <= NUMBER_OF_VARIABLES; var++) {

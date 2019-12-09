@@ -17,7 +17,7 @@ class DataManager {
 
     /**
      * Returns the last committed value of the given variable if available
-     * @author Saumya
+     * @author Omkar
      */
     public Integer read(String variableName) {
         if (!dataMap.containsKey(variableName)) {
@@ -28,7 +28,7 @@ class DataManager {
 
     /**
      * Returns the last committed value of the given variable when the requesting transaction was started
-     * @author Saumya
+     * @author Omkar
      */
     Optional<Integer> readForRO(String variableName, Long tickTime) {
         if (!dataMap.containsKey(variableName)) {
@@ -43,7 +43,7 @@ class DataManager {
 
     /**
      * Writes the new value of the variable to the site
-     * @author Saumya
+     * @author Omkar
      */
     public void write(String variableName, int val, long tickTime) {
         if (!dataMap.containsKey(variableName)) {
@@ -60,7 +60,7 @@ class DataManager {
 
     /**
      * returns true if a fresh copy of the variable is available at this site
-     * @author Saumya
+     * @author Omkar
      */
     boolean isVariableSafeForRead(String variableName) {
         return !unsafeVariablesForReading.contains(variableName);
@@ -68,7 +68,7 @@ class DataManager {
 
     /**
      * clears the set of stale state (unsafe to read) variables
-     * @author Saumya
+     * @author Omkar
      */
     void clearStaleSet() {
         unsafeVariablesForReading.clear();
@@ -76,7 +76,7 @@ class DataManager {
 
     /**
      * Adds variable to the set of staleState variables. Thus marking the variable as unsafe to read
-     * @author Saumya
+     * @author Omkar
      */
     void addVariableToStaleSet(String variableName) {
         if (dataMap.containsKey(variableName)) {
@@ -87,7 +87,7 @@ class DataManager {
     }
 
     /**
-     * @author Saumya
+     * @author Omkar
      */
     void initializeVar(String variableName, int val) {
         dataMap.put(variableName, val);
@@ -155,7 +155,7 @@ class DataManager {
 
     /**
      * Dumps the current state of the data on the site to stdout
-     * @author Saumya
+     * @author Omkar
      */
     void dumpSite(int id) {
         StringBuffer sb = new StringBuffer();

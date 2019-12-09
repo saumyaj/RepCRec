@@ -4,17 +4,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 class ReadOnlyTransaction extends Transaction {
-    Map<String, Integer> allVariablesData;
     Map<String, Long> lastWriteTimeMap;
     String pendingReadVariable;
 
     ReadOnlyTransaction(String id, long tickTime, Map<String, Long> lastWriteTimeMap) {
         super(id, tickTime);
-        allVariablesData = new HashMap<>();
         this.lastWriteTimeMap = lastWriteTimeMap;
         pendingReadVariable = null;
     }
 
+
+    /**
+     * Obtains the tick time of the last committed write for given variable
+     * @param variableName
+     * @return the tick time
+     * @author Omkar
+     */
     Long getVariableTickTIme(String variableName) {
         return lastWriteTimeMap.get(variableName);
     }

@@ -2,6 +2,9 @@ package nyu.edu.adb.project;
 
 import java.util.*;
 
+/**
+ * The site has its own data manager and transfers all calls related to its data to the data manager
+ */
 public class Site {
 
     private final int id;
