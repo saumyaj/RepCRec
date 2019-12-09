@@ -15,6 +15,10 @@ class DataManager {
         writeHistory = new HashMap<>();
     }
 
+    /**
+     * Returns the last committed value of the given variable if available
+     * @author Saumya
+     */
     public Integer read(String variableName) {
         if (!dataMap.containsKey(variableName)) {
             throw new RuntimeException("Site does not contain variable");
@@ -22,7 +26,11 @@ class DataManager {
         return dataMap.get(variableName);
     }
 
-    public Optional<Integer> readForRO(String variableName, Long tickTime) {
+    /**
+     * Returns the last committed value of the given variable when the requesting transaction was started
+     * @author Saumya
+     */
+    Optional<Integer> readForRO(String variableName, Long tickTime) {
         if (!dataMap.containsKey(variableName)) {
             throw new RuntimeException("Site does not contain variable");
         }
@@ -33,6 +41,10 @@ class DataManager {
         return Optional.empty();
     }
 
+    /**
+     * Writes the new value of the variable to the site
+     * @author Saumya
+     */
     public void write(String variableName, int val, long tickTime) {
         if (!dataMap.containsKey(variableName)) {
             throw new RuntimeException("Site does not contain variable");
@@ -46,18 +58,27 @@ class DataManager {
         }
     }
 
-    public boolean isVariableSafeForRead(String variableName) {
-        if (unsafeVariablesForReading.contains(variableName)) {
-            return false;
-        }
-        return true;
+    /**
+     * returns true if a fresh copy of the variable is available at this site
+     * @author Saumya
+     */
+    boolean isVariableSafeForRead(String variableName) {
+        return !unsafeVariablesForReading.contains(variableName);
     }
 
-    public void clearStaleSet() {
+    /**
+     * clears the set of stale state (unsafe to read) variables
+     * @author Saumya
+     */
+    void clearStaleSet() {
         unsafeVariablesForReading.clear();
     }
 
-    public void addVariableToStaleSet(String variableName) {
+    /**
+     * Adds variable to the set of staleState variables. Thus marking the variable as unsafe to read
+     * @author Saumya
+     */
+    void addVariableToStaleSet(String variableName) {
         if (dataMap.containsKey(variableName)) {
             unsafeVariablesForReading.add(variableName);
         } else {
@@ -65,7 +86,10 @@ class DataManager {
         }
     }
 
-    public void initializeVar(String variableName, int val) {
+    /**
+     * @author Saumya
+     */
+    void initializeVar(String variableName, int val) {
         dataMap.put(variableName, val);
 
         Map<Long, Integer> variableHistory = new HashMap<>();
@@ -74,35 +98,66 @@ class DataManager {
         writeHistory.put(variableName, variableHistory);
     }
 
-    public boolean releaseReadLock(String variableName, String transactionName) {
+    /**
+     * Calls the lockTable to release the read lock on the given variable by the given transaction
+     * @author Saumya
+     */
+    boolean releaseReadLock(String variableName, String transactionName) {
         return lockTable.releaseReadLock(variableName, transactionName);
     }
 
-    public boolean releaseWriteLock(String variableName) {
+    /**
+     * Calls the lockTable to release the write lock on the given variable
+     * @author Saumya
+     */
+    boolean releaseWriteLock(String variableName) {
         return lockTable.releaseWriteLock(variableName);
     }
 
-    public boolean getReadLock(String variableName, String transactionId) {
+    /**
+     * Calls the lockTable to get the read lock on the given variable by the given transaction
+     * @author Saumya
+     */
+    boolean getReadLock(String variableName, String transactionId) {
         return lockTable.addReadLock(variableName, transactionId);
     }
 
-    public boolean getWriteLock(String variableName, String transactionId) {
+    /**
+     * Calls the lockTable to get the write lock on the given variable by the given transaction
+     * @author Saumya
+     */
+    boolean getWriteLock(String variableName, String transactionId) {
         return lockTable.addWriteLock(variableName, transactionId);
     }
 
-    public void clearAllLocks() {
+    /**
+     * @author Saumya
+     */
+    void clearAllLocks() {
         lockTable.clearLockTable();
     }
 
+    /**
+     * Retrieves and returns the current writeLockHolder information from the lockTable
+     * @author Saumya
+     */
     Optional<String> getWriteLockHolder(String variableName) {
         return lockTable.getWriteLockHolder(variableName);
     }
 
+    /**
+     * Retrieves and returns the current readLockHolder information from the lockTable
+     * @author Saumya
+     */
     List<String> getReadLockHolders(String variableName) {
         return lockTable.getReadLockHolders(variableName);
     }
 
-    public void dumpSite(int id) {
+    /**
+     * Dumps the current state of the data on the site to stdout
+     * @author Saumya
+     */
+    void dumpSite(int id) {
         StringBuffer sb = new StringBuffer();
         sb.append("site " + id + " - ");
         String[] variableList = new String[dataMap.size()];
@@ -115,7 +170,11 @@ class DataManager {
         System.out.println(sb.toString());
     }
 
-    public boolean isWriteLockAvailable(String variableName, String transactionId) {
+    /**
+     * Checks in the lockTable if the writeLock is available for the given variable by the given transaction
+     * @author Saumya
+     */
+    boolean isWriteLockAvailable(String variableName, String transactionId) {
         return lockTable.isWriteLockAvailable(variableName, transactionId);
     }
 }

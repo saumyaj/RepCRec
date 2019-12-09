@@ -4,16 +4,24 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Database {
-    long tickTime;
-    int cycleDetectionInterval = 1;
+
+/**
+ * This class is the public API of the main database system. The user of this database needs to call methods
+ * of this class to interact with the database
+ */
+class Database {
+    private long tickTime;
+    private int cycleDetectionInterval = 1;
     TransactionManager transactionManager;
-    SiteManager siteManager;
-    WaitQueueManager waitQueueManager;
+    private SiteManager siteManager;
+    private WaitQueueManager waitQueueManager;
     private final int NUMBER_OF_SITES = 10;
     private final static Logger LOGGER =
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
+    /**
+     * @author Saumya
+     */
     Database() {
         tickTime = 0;
         waitQueueManager = new WaitQueueManager();
@@ -22,7 +30,13 @@ public class Database {
         siteManager.setTransactionManager(transactionManager);
         initialize();
     }
-    public void handleQuery(String query) throws Exception {
+
+    /**
+     * This is the parser method of the database. String type queries are parsed in this method and then
+     * appropriate operation is performed by the database
+     * @author Saumya
+     */
+    void handleQuery(String query) throws Exception {
         if (query==null) {
             throw new NullPointerException("query is null");
         }
@@ -51,6 +65,9 @@ public class Database {
         }
     }
 
+    /**
+     * @author Saumya
+     */
     private String getParams(String query) {
         if(query.contains("(")) {
             return query.substring(query.indexOf("(")+1,query.indexOf(")"));
@@ -70,6 +87,9 @@ public class Database {
         transactionManager.endTransaction(paramsString, tickTime);
     }
 
+    /**
+     * @author Saumya
+     */
     private void write(String paramsString) throws Exception {
         String[] params = paramsString.split(",");
         if (params.length == 3) {
@@ -79,7 +99,10 @@ public class Database {
         }
     }
 
-    private void read(String paramsString) throws Exception {
+    /**
+     * @author Omkar
+     */
+    private void read(String paramsString) {
 
         String[] params = paramsString.split(",");
         if (params.length == 2) {
@@ -87,16 +110,17 @@ public class Database {
             Optional<Integer> readValue = transactionManager.read( params[0].trim(), variableName);
             if(readValue.isPresent()) {
                 System.out.println(params[1].trim() + ": " + readValue.get());
-//                System.out.println(readValue.get());
             } else {
                 LOGGER.log(Level.INFO, "read failed for transaction " + params[0].trim());
-//                System.out.println("read failed");
             }
         } else {
             throw new IllegalArgumentException("write operation must have 3 arguments");
         }
     }
 
+    /**
+     * @author Omkar
+     */
     private void recoverSite(String paramsString) {
         String[] params = paramsString.split(",");
         if(params.length == 1) {
@@ -107,6 +131,9 @@ public class Database {
         }
     }
 
+    /**
+     * @author Omkar
+     */
     private void failSite(String paramsString) {
         String[] params = paramsString.split(",");
         if(params.length == 1) {
@@ -118,7 +145,11 @@ public class Database {
         }
     }
 
-    public void initialize() {
+    /**
+     * Helper method to initialize the database for this project
+     * @author Omkar
+     */
+    void initialize() {
         siteManager.initializeVariables();
     }
 }

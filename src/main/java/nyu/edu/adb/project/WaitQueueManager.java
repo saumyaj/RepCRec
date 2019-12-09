@@ -12,6 +12,11 @@ class WaitQueueManager {
         listOfVariables = new ArrayList<>();
     }
 
+    /**
+     * Removes and returns the first waiting operation from the queue of a particular variable if any
+     * @param transactionName name of the transaction
+     * @author Saumya
+     */
     void removeAllPendingOperationOfTransaction(String transactionName) {
         for (String variableName: variableWaitQueueMap.keySet()) {
             List<Operation> waitingOperations = variableWaitQueueMap.get(variableName);
@@ -22,6 +27,12 @@ class WaitQueueManager {
         }
     }
 
+    /**
+     * Removes and returns the first waiting operation from the queue of a particular variable if any
+     * @param variableName name of the variable
+     * @return First waiting Operation object if any
+     * @author Saumya
+     */
     Optional<Operation> pollNextWaitingOperation(String variableName) {
         List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
         if (!waitQueue.isEmpty()) {
@@ -30,7 +41,12 @@ class WaitQueueManager {
         return Optional.empty();
     }
 
-    // This function is only called if the first operation in the queue is a read operation
+    /**
+     * Returns a list of all the operations from the queue until a write operation is found
+     * @param variableName name of the variable
+     * @return List of Operations until next write operation
+     * @author Saumya
+     */
     List<Operation> pollUntilNextWriteOperation(String variableName) {
         List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
         List<Operation> readOperations = new ArrayList<>();
@@ -45,6 +61,12 @@ class WaitQueueManager {
         return readOperations;
     }
 
+    /**
+     * Returns the first waiting operation without removing it from the queue of a particular variable if any
+     * @param variableName name of the variable
+     * @return Next waiting Operation in the queue if any
+     * @author Saumya
+     */
     Optional<Operation> peekAtNextWaitingOperation(String variableName) {
         List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
         if (waitQueue.isEmpty()) {
@@ -53,6 +75,12 @@ class WaitQueueManager {
         return Optional.of(waitQueue.get(0));
     }
 
+    /**
+     * Returns true if a write operation is already waiting for the given variable
+     * @param variableName name of the variable
+     * @return true if a write operation is already waiting for the given variable, false otherwise
+     * @author Saumya
+     */
     boolean precedingWriteOperationExists(String variableName) {
         List<Operation> waitQueue = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
         for (Operation op: waitQueue) {
@@ -63,6 +91,12 @@ class WaitQueueManager {
         return false;
     }
 
+    /**
+     * Returns true if some operation is waiting for the given variable
+     * @param variableName name of the variable
+     * @return true if some operation is waiting for the given variable, false otherwise.
+     * @author Saumya
+     */
     boolean isOperationAlreadyWaiting(String variableName) {
         if (variableWaitQueueMap.containsKey(variableName)) {
             return !variableWaitQueueMap.get(variableName).isEmpty();
@@ -70,6 +104,12 @@ class WaitQueueManager {
         return false;
     }
 
+    /**
+     * Adds the given operation to the wait queue of the given variable
+     * @param variableName name of the variable
+     * @param operation Operation to be added
+     * @author Saumya
+     */
     void addWaitingOperation(String variableName, Operation operation) {
         List<Operation> waitQueue = variableWaitQueueMap
                 .getOrDefault(variableName, new ArrayList<Operation>());
@@ -77,6 +117,12 @@ class WaitQueueManager {
         variableWaitQueueMap.put(variableName, waitQueue);
     }
 
+    /**
+     * Returns the id of the transaction that has the last waiting operation for the given variable if any
+     * @param variableName name of the variable
+     * @return the id of the transaction that has the last waiting operation for the given variable if any
+     * @author Saumya
+     */
     Optional<String> getLastWriteTransaction(String variableName) {
 
         List<Operation> list = variableWaitQueueMap.getOrDefault(variableName, new ArrayList<>());
@@ -90,6 +136,12 @@ class WaitQueueManager {
         return Optional.empty();
     }
 
+    /**
+     * Returns all the transaction ids that has a waiting write operation on the given variable
+     * @param variableName name of the variable
+     * @return List of all the transaction ids that has a waiting write operation on the given variable
+     * @author Saumya
+     */
     List<String> getQueueHoldersForWriteOperation(String variableName) {
         List<String> queueHolders = new ArrayList<>();
         if (variableWaitQueueMap.containsKey(variableName)

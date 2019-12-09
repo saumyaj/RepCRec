@@ -1,5 +1,9 @@
 package nyu.edu.adb.project;
 
+/**
+ * This class is just a data structure to hold the information about read/write operations
+ * @author Saumya
+ */
 class Operation {
     enum OperationType {
         READ, WRITE
@@ -23,11 +27,11 @@ class Operation {
         this.value = value;
     }
 
-    public String getTransactionId() {
+    String getTransactionId() {
         return transactionId;
     }
 
-    public OperationType getOperationType() {
+    OperationType getOperationType() {
         return operationType;
     }
 
@@ -35,7 +39,7 @@ class Operation {
         return variableName;
     }
 
-    public Integer getValue() {
+    Integer getValue() {
         return value;
     }
 }

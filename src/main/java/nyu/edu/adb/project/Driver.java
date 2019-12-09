@@ -1,13 +1,11 @@
 package nyu.edu.adb.project;
 
-import javax.xml.crypto.Data;
 import java.io.File;
 import java.util.List;
 import java.util.Scanner;
 
 public class Driver {
     public static void main(String[] args) throws Exception {
-//        Driver driver = new Driver();
         executeFromFile("tests.txt");
     }
 

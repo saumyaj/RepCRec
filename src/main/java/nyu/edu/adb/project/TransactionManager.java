@@ -4,11 +4,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.*;
 
-public class TransactionManager {
-    Map<String, Transaction> transactionMap;
-    SiteManager siteManager;
-    WaitQueueManager waitQueueManager;
-    DeadLockManager deadLockManager;
+class TransactionManager {
+    private Map<String, Transaction> transactionMap;
+    private SiteManager siteManager;
+    private WaitQueueManager waitQueueManager;
+    private DeadLockManager deadLockManager;
     Set<String> abortedTransactions;
 
     private final static Logger LOGGER =
@@ -47,33 +47,14 @@ public class TransactionManager {
 
         abortedTransactions.add(transactionName);
         transactionMap.remove(transactionName);
-//        readWriteTransaction.setAborted(true);
-//        readWriteTransaction.setAbortReason("Deadlock removal");
-        System.out.println(transactionName + " " + "aborts");
-        System.out.println("Reason for abortion: " + "Deadlock removal");
-    }
-
-    private void releaseAllReadLocksOfTransaction(ReadWriteTransaction transaction) {
-        Map<String, Integer> readLocks = transaction.getReadLocks();
-        for (Map.Entry<String, Integer> lock : readLocks.entrySet()) {
-            siteManager.releaseReadLock(lock.getKey(), lock.getValue(), transaction.getName());
-        }
-    }
-
-    private void releaseAllWriteLocksOfTransaction(ReadWriteTransaction transaction) {
-        Map<String, List<Integer>> readLocks = transaction.getWriteLocks();
-        for (Map.Entry<String, List<Integer>> lock : readLocks.entrySet()) {
-            String variableName = lock.getKey();
-            for (Integer siteId : lock.getValue()) {
-                siteManager.releaseWriteLock(variableName, siteId);
-            }
-        }
+        System.out.println(transactionName + " aborts");
+        System.out.println("Reason for abortion: Deadlock removal");
     }
 
     private String findYoungestTransaction(List<List<String>> cycles) {
         String youngestTransaction = null;
         long yougestAge = Long.MIN_VALUE;
-        for (List<String> cycle: cycles) {
+        for (List<String> cycle : cycles) {
             for (String transactionName : cycle) {
                 Transaction transaction = transactionMap.get(transactionName);
                 if (transaction.getBeginTime() > yougestAge) {
@@ -85,13 +66,13 @@ public class TransactionManager {
         return youngestTransaction;
     }
 
-    void createReadWriteTransaction(String transactionName, long tickTime) throws Exception {
+    void createReadWriteTransaction(String transactionName, long tickTime) {
         validateTransactionName(transactionName);
         Transaction transaction = new ReadWriteTransaction(transactionName, tickTime);
         transactionMap.put(transactionName, transaction);
     }
 
-    void createReadOnlyTransaction(String transactionName, long tickTime) throws Exception {
+    void createReadOnlyTransaction(String transactionName, long tickTime) {
         validateTransactionName(transactionName);
 
         Transaction transaction = new ReadOnlyTransaction(transactionName, tickTime, siteManager.getLastWriteMapClone());
@@ -104,8 +85,7 @@ public class TransactionManager {
         }
     }
 
-    void write(String transactionName, String variableName, int value) throws Exception {
-
+    void write(String transactionName, String variableName, int value) {
         ReadWriteTransaction t;
         if (!(transactionMap.get(transactionName) instanceof ReadWriteTransaction)) {
             throw new IllegalArgumentException("Transaction " + transactionName + " is a ReadOnly Transaction, " +
@@ -113,15 +93,6 @@ public class TransactionManager {
         }
         t = (ReadWriteTransaction) transactionMap.get(transactionName);
 
-
-        // We should probably try to get on all UP site again. In case a new site has come up
-
-//        if (t.getWriteLocks().contains(variableName)) {
-//            t.writeToVariable(variableName, value);
-//            return;
-//        }
-
-        // Check if other transaction is already waiting
         if (waitQueueManager.precedingWriteOperationExists(variableName) ||
                 !siteManager.canAllUpSitesProvideWriteLock(variableName, transactionName)) {
             handleWaitingForOperation(variableName, transactionName, value);
@@ -130,17 +101,13 @@ public class TransactionManager {
 
         List<Integer> list = siteManager.getWriteLock(variableName, transactionName);
         if (!list.isEmpty()) {
-
-            // TODO - Move these instructions to a function
             t.addWriteLock(variableName, list);
             t.addAccessedSites(list);
             t.writeToVariable(variableName, value);
             return;
         }
 
-        // Adding operation to wait queue in order to finish it in future
         handleWaitingForOperation(variableName, transactionName, value);
-
     }
 
     private void handleWaitingForOperation(String variableName, String transactionName) {
@@ -150,9 +117,7 @@ public class TransactionManager {
             deadLockManager.addEdge(transactionName, lastWriteTransactionFromWaitQueue.get());
         } else {
             Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
-            if (writeLockHolder.isPresent()) {
-                deadLockManager.addEdge(transactionName, writeLockHolder.get());
-            }
+            writeLockHolder.ifPresent(s -> deadLockManager.addEdge(transactionName, s));
         }
 
         waitQueueManager.addWaitingOperation(variableName,
@@ -164,7 +129,6 @@ public class TransactionManager {
         Optional<String> writeLockHolder = siteManager.getWriteLockHolder(variableName);
         List<String> queueHolders = waitQueueManager.getQueueHoldersForWriteOperation(variableName);
 
-        // Adding waits - for edge for the responsible transaction
         if (!queueHolders.isEmpty()) {
             deadLockManager.addMultipleEdges(transactionName, queueHolders);
         } else if (writeLockHolder.isPresent()) {
@@ -211,8 +175,7 @@ public class TransactionManager {
         */
         if (readWriteTransaction.hasWriteLock(variableName)) {
             if (readWriteTransaction.getModifiedVariables().containsKey(variableName)) {
-                data = Optional.of(readWriteTransaction.getModifiedVariables().get(variableName));
-                return data;
+               return Optional.of(readWriteTransaction.getModifiedVariables().get(variableName));
             } else {
                 // There will never be a case for else. If we get a write lock we must have modified that variable
             }
@@ -233,8 +196,6 @@ public class TransactionManager {
             return siteManager.read(variableName, siteId.get());
         }
 
-
-        // Adding operation to wait queue in order to finish it in future
         handleWaitingForOperation(variableName, transactionName);
         return Optional.empty();
     }
@@ -249,7 +210,7 @@ public class TransactionManager {
         return val;
     }
 
-    public void checkROTransactionsForWaitingOperations(int siteId) {
+    void checkROTransactionsForWaitingOperations(int siteId) {
         for (String transactionName : transactionMap.keySet()) {
             Transaction transaction = transactionMap.get(transactionName);
             if (transaction instanceof ReadOnlyTransaction) {
@@ -258,16 +219,13 @@ public class TransactionManager {
                     String variableName = readOnlyTransaction.getPendingReadVariable();
                     Long tickTime = readOnlyTransaction.getVariableTickTIme(variableName);
                     Optional<Integer> readValue = siteManager.readForROFromSpecificSite(variableName, tickTime, siteId);
-                    if (readValue.isPresent()) {
-                        System.out.println(variableName + ": " + readValue.get());
-//                        System.out.println(readValue.get());
-                    }
+                    readValue.ifPresent(integer -> System.out.println(variableName + ": " + integer));
                 }
             }
         }
     }
 
-    public void endTransaction(String transactionName, long tickTime) {
+    void endTransaction(String transactionName, long tickTime) {
         if (!transactionMap.containsKey(transactionName)) {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " not found in Transaction Map");
             return;
@@ -287,7 +245,7 @@ public class TransactionManager {
         transactionMap.remove(transactionName);
     }
 
-    public void processWaitingOperationsIfAny(String variableName) {
+    void processWaitingOperationsIfAny(String variableName) {
         Optional<Operation> nextOp = waitQueueManager.peekAtNextWaitingOperation(variableName);
         if (!nextOp.isPresent()) {
             return;
@@ -310,7 +268,6 @@ public class TransactionManager {
             ReadWriteTransaction readWriteTransaction =
                     (ReadWriteTransaction) transactionMap.get(operation.getTransactionId());
 
-            // TODO - Move these instructions to a method
             readWriteTransaction.addWriteLock(variableName, siteIds);
             readWriteTransaction.addAccessedSites(siteIds);
             readWriteTransaction.writeToVariable(variableName, operation.getValue());
@@ -329,7 +286,6 @@ public class TransactionManager {
                 readWriteTransaction.addAccessedSite(siteId.get());
                 Optional<Integer> value = siteManager.read(variableName, siteId.get());
                 System.out.println(variableName + ": " + value.get());
-//                System.out.println(value.get());
             }
 
         }
@@ -375,7 +331,7 @@ public class TransactionManager {
         return true;
     }
 
-    public void checkTransactionsForAbortionAfterSiteFailure(int siteId) {
+    void checkTransactionsForAbortionAfterSiteFailure(int siteId) {
         for (Transaction transaction : transactionMap.values()) {
             if (transaction instanceof ReadOnlyTransaction) {
                 return;

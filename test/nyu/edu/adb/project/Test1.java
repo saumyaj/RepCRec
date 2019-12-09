@@ -1351,5 +1351,35 @@ public class Test1 {
 //        assertEquals("33", lines[3]);
     }
 
+    @Test
+    void testDeadLockDetection () throws Exception {
+
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("begin(T3)");
+        instructions.add("R(T1,x1)");
+        instructions.add("W(T2,x1,50)");
+        instructions.add("W(T3,x1,60)");
+        instructions.add("W(T1,x1,70)");
+        instructions.add("end(T1)");
+        instructions.add("end(T2)");
+        instructions.add("end(T3)");
+        instructions.add("begin(T4)");
+        instructions.add("R(T4,x1)");
+        instructions.add("end(T4)");
+
+
+
+        Driver.executeFromList(instructions);
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+        String[] lines = filterLines(baos.toString().split("\n"));
+//        System.out.println(Arrays.toString(lines));
+        assertEquals("x1: 10", lines[0]);
+        assertEquals("x1: 50", lines[1]);
+//        assertEquals("22", lines[2]);
+//        assertEquals("33", lines[3]);
+    }
+
 
 }

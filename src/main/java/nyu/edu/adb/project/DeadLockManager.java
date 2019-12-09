@@ -6,12 +6,19 @@ class DeadLockManager {
     private Map<String, Set<String>> waitsForGraph;
     private Set<String> vertices;
     private List<List<String>> cycles;
+
     DeadLockManager() {
         waitsForGraph = new HashMap<>();
         vertices = new HashSet<>();
         cycles = new ArrayList<>();
     }
 
+    /**
+     * Adds edge between two transaction nodes in the waits-for graph
+     * @param t1 Source transaction name
+     * @param t2 Target transaction name
+     * @author Saumya
+     */
     void addEdge(String t1, String t2) {
         if (t1.equals(t2)) {
             return;
@@ -23,18 +30,35 @@ class DeadLockManager {
         vertices.add(t2);
     }
 
+    /**
+     * Adds multiple directed edges from the source transaction to the list of target transactions
+     * @param src Source transaction
+     * @param targets List of target transactions
+     * @author Saumya
+     */
     void addMultipleEdges(String src, List<String> targets) {
         for (String target: targets) {
             addEdge(src, target);
         }
     }
 
+    /**
+     * Removes the edge from t1 to t2
+     * @param t1 Source transaction name
+     * @param t2 Target transaction name
+     * @author Saumya
+     */
     void removeEdge(String t1, String t2) {
         Set<String> neighbors = waitsForGraph.getOrDefault(t1, new HashSet<>());
         neighbors.remove(t2);
         waitsForGraph.put(t1, neighbors);
     }
 
+    /**
+     * Removes a transaction from the waits-for graph
+     * @param t1 transaction name
+     * @author Saumya
+     */
     void removeNode(String t1) {
         waitsForGraph.remove(t1);
         for (Set<String> set: waitsForGraph.values()) {
@@ -42,7 +66,12 @@ class DeadLockManager {
         }
     }
 
-    public List<List<String>> getDeadLockCycles() {
+    /**
+     * Runs the cycle detection algorithm on the waits for graph and returns a list of all the cycles
+     * @return list of cycles represented as list of transaction names
+     * @author Saumya
+     */
+    List<List<String>> getDeadLockCycles() {
         Set<String> whiteSet = new HashSet<>();
         Set<String> graySet = new HashSet<>();
         Set<String> blackSet = new HashSet<>();
@@ -61,6 +90,10 @@ class DeadLockManager {
         return cycles;
     }
 
+    /**
+     * DFS algorithm as part of the cycle detection algorithm
+     * @author Saumya
+     */
     private void dfs(String current, Set<String> whiteSet,
                         Set<String> graySet, Set<String> blackSet, Map<String, String> parentMap ) {
         //move current to gray set from white set and then explore it.
@@ -82,6 +115,10 @@ class DeadLockManager {
         moveVertex(current, graySet, blackSet);
     }
 
+    /**
+     * Traces back the nodes in the cycle when the cycle is detected
+     * @author Saumya
+     */
     private void traceCycle(String lastNode, String secondLastNode, Map<String, String> parentMap) {
         List<String> cycle = new ArrayList<>();
         cycle.add(lastNode);
@@ -95,6 +132,10 @@ class DeadLockManager {
         cycles.add(cycle);
     }
 
+    /**
+     * A helper function for the cycle detection algorithm
+     * @author Saumya
+     */
     private void moveVertex(String vertex, Set<String> sourceSet,
                             Set<String> destinationSet) {
         sourceSet.remove(vertex);
