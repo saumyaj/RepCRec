@@ -287,14 +287,11 @@ class TransactionManager {
         boolean wasCommitted = commitTransaction(transactionName, tickTime);
         if (wasCommitted) {
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " committed successfully");
-            System.out.println(transactionName + " commits");
         } else {
             //read only transactions never abort, so this must be a read-write transaction
             ReadWriteTransaction transaction = (ReadWriteTransaction) transactionMap.get(transactionName);
             abortedTransactions.add(transactionName);
             LOGGER.log(Level.INFO, "Transaction " + transactionName + " was aborted");
-            System.out.println(transactionName + " aborts");
-            System.out.println("Reason for abortion: Site failure");
         }
         transactionMap.remove(transactionName);
     }
@@ -386,6 +383,10 @@ class TransactionManager {
             if (!readWriteTransaction.isAborted()) {
                 siteManager.commitWrites(readWriteTransaction.getModifiedVariables(),
                         readWriteTransaction.getWriteLocks(), tickTime);
+                System.out.println(transactionName + " commits");
+            } else {
+                System.out.println(transactionName + " aborts");
+                System.out.println("Reason for abortion: Site failure");
             }
 
             releaseResourcesOfReadWriteTransaction(readWriteTransaction);
@@ -393,6 +394,8 @@ class TransactionManager {
             if (readWriteTransaction.isAborted()) {
                 return false;
             }
+        } else {
+            System.out.println(transactionName + " commits");
         }
         return true;
     }
