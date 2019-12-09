@@ -20,7 +20,7 @@ public class Site {
         return dataManager.read(variableName);
     }
 
-    public Optional<Integer> readForRO(String variableName, Long tickTime) {
+    Optional<Integer> readForRO(String variableName, Long tickTime) {
         return dataManager.readForRO(variableName, tickTime);
     }
 
@@ -28,39 +28,39 @@ public class Site {
         dataManager.write(variableName, val, tickTime);
     }
 
-    public boolean isVariableSafeForRead(String variableName) {
+    boolean isVariableSafeForRead(String variableName) {
         return dataManager.isVariableSafeForRead(variableName);
     }
 
-    public void clearStaleSet() {
+    void clearStaleSet() {
         dataManager.clearStaleSet();
     }
 
-    public void addVariableToStaleSet(String variableName) {
+    void addVariableToStaleSet(String variableName) {
         dataManager.addVariableToStaleSet(variableName);
     }
 
-    public void initializeVar(String variableName, int val) {
+    void initializeVar(String variableName, int val) {
         dataManager.initializeVar(variableName, val);
     }
 
-    public boolean releaseReadLock(String variableName, String transactionName) {
+    boolean releaseReadLock(String variableName, String transactionName) {
         return dataManager.releaseReadLock(variableName, transactionName);
     }
 
-    public boolean releaseWriteLock(String variableName) {
+    boolean releaseWriteLock(String variableName) {
         return dataManager.releaseWriteLock(variableName);
     }
 
-    public boolean getReadLock(String variableName, String transactionId) {
+    boolean getReadLock(String variableName, String transactionId) {
         return dataManager.getReadLock(variableName, transactionId);
     }
 
-    public boolean getWriteLock(String variableName, String transactionId) {
+    boolean getWriteLock(String variableName, String transactionId) {
         return dataManager.getWriteLock(variableName, transactionId);
     }
 
-    public void clearAllLocks() {
+    void clearAllLocks() {
         dataManager.clearAllLocks();
     }
 
@@ -73,11 +73,11 @@ public class Site {
         return dataManager.getReadLockHolders(variableName);
     }
 
-    public void dumpSite() {
+    void dumpSite() {
         dataManager.dumpSite(id);
     }
 
-    public boolean isWriteLockAvailable(String variableName, String transactionId) {
+    boolean isWriteLockAvailable(String variableName, String transactionId) {
         return dataManager.isWriteLockAvailable(variableName, transactionId);
     }
 

@@ -1,11 +1,10 @@
 package nyu.edu.adb.project;
 
-import java.util.HashMap;
 import java.util.Map;
 
 class ReadOnlyTransaction extends Transaction {
-    Map<String, Long> lastWriteTimeMap;
-    String pendingReadVariable;
+    private Map<String, Long> lastWriteTimeMap;
+    private String pendingReadVariable;
 
     ReadOnlyTransaction(String id, long tickTime, Map<String, Long> lastWriteTimeMap) {
         super(id, tickTime);
@@ -24,11 +23,11 @@ class ReadOnlyTransaction extends Transaction {
         return lastWriteTimeMap.get(variableName);
     }
 
-    public String getPendingReadVariable() {
+    String getPendingReadVariable() {
         return pendingReadVariable;
     }
 
-    public void setPendingReadVariable(String pendingReadVariable) {
+    void setPendingReadVariable(String pendingReadVariable) {
         this.pendingReadVariable = pendingReadVariable;
     }
 }

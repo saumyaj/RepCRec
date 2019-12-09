@@ -1,0 +1,220 @@
+@startuml
+
+class Database {
+    - long tickTime;
+    - int cycleDetectionInterval
+    ~ TransactionManager transactionManager
+    - SiteManager siteManager
+    - WaitQueueManager waitQueueManager
+    - int NUMBER_OF_SITES
+    + handleQuery(String)
+    - String getParams(String)
+    - void write(String)
+    - void read(String)
+    - void recoverSite(String)
+    - void failSite(String)
+    - void beginReadWriteTransaction(String)
+    - void beginReadOnlyTransaction(String)
+    - void endTransaction(String)
+}
+
+class DataManager {
+    - LockTable lockTable
+    - Map<String, Integer> dataMap
+    - Map<String, Map<Long, Integer>> writeHistory
+    - Set<String> unsafeVariablesForReading
+    + Integer read(String)
+    ~ Optional<Integer> readForRO(String, long)
+    + void write(String, int, long)
+    ~ boolean isVariableSafeForRead(String)
+    ~ void clearStaleSet()
+    ~ void addVariableToStaleSet(String)
+    ~ void initializeVar(String, int)
+    ~ boolean releaseReadLock(String, String)
+    ~ boolean releaseWriteLock(String)
+    ~ boolean getReadLock(String, String)
+    ~ boolean getWriteLock(String, String)
+    ~ void clearAllLocks()
+    ~ Optional<String> getWriteLockHolder(String)
+    ~ void dumpSite(int)
+    ~ boolean isWriteLockAvailable(String)
+}
+
+class DeadLockManager {
+    - Map<String, Set<String>> waitsForGraph
+    - Set<String> vertices
+    - List<List<String>> cycles
+    ~ void addEdge(String, String)
+    ~ void addMultipleEdges(String, List<String>)
+    ~ void removeEdge(String, String)
+    ~ void removeNode(String)
+    ~ List<List<String>> getDeadLockCycles()
+    - void dfs(String, Set<String>,
+                            Set<String>, Set<String>, Map<String, String>)
+    - void traceCycle(String, String, Map<String, String>)
+    - void moveVertex(String, Set<String>, Set<String>)
+}
+
+class LockTable {
+    - Map<String, String> writeLocks
+    - Map<String, Set<String>> readLocks
+    - HashMap<String, Integer> readLockCount
+    ~ Optional<String> getWriteLockHolder(String)
+    ~ List<String> getReadLockHolders(String)
+    ~ boolean isWriteLockAvailable(String, String)
+    ~ boolean addWriteLock(String, String)
+    ~ private boolean isReadLockAvailable(String, String)
+    ~ boolean addReadLock(String, String)
+    ~ boolean releaseWriteLock(String)
+    ~ boolean releaseReadLock(String, String)
+    ~ void clearLockTable()
+}
+
+class Operation {
+    @Getter
+    - String transactionId;
+    - OperationType operationType;
+    - String variableName;
+    - Integer value;
+}
+
+class ReadOnlyTransaction {
+    - Map<String, Long> lastWriteTimeMap;
+    - String pendingReadVariable;
+    ~ Long getVariableTickTIme(String)
+    ~ String getPendingReadVariable()
+    ~ void setPendingReadVariable(String)
+}
+
+class ReadWriteTransaction {
+    - Map<String, Integer> readLocks;
+    - Map<String, List<Integer>> writeLocks;
+    - Set<Integer> sitesAccessed;
+    - Map<String, Integer> modifiedVariables;
+    - boolean isAborted;
+    ~ void writeToVariable(String, int)
+    ~ int getReadLockSiteId(String)
+    ~ List<Integer> getWriteLockSiteId(String)
+    ~ void addReadLock(String, int)
+    ~ void addWriteLock(String, List<Integer>)
+    ~ boolean addAccessedSites(List<Integer>)
+    ~ boolean addAccessedSite(int)
+    ~ boolean hasReadLock(String)
+    ~ boolean hasWriteLock(String)
+}
+
+class Site {
+    - int id
+    - DataManager dataManager
+    + Integer read(String)
+    ~ Optional<Integer> readForRO(String, Long)
+    + void write(String, int, long)
+    ~ boolean isVariableSafeForRead(String)
+    ~ void clearStaleSet()
+    ~ void addVariableToStaleSet(String)
+    ~ void initializeVar(String, int)
+    ~ boolean releaseReadLock(String, String)
+    ~ boolean releaseWriteLock(String)
+    ~ boolean getReadLock(String, String)
+    ~ boolean getWriteLock(String, String)
+    ~ void clearAllLocks()
+    ~ Optional<String> getWriteLockHolder(String)
+    ~ List<String> getReadLockHolders(String)
+    ~ void dumpSite()
+    ~ boolean isWriteLockAvailable(String, String)
+}
+
+class SiteManager {
+    - Map<Integer, Site> siteMap
+    - Map<String, List<Integer>> variableToSiteIdMap
+    - Map<Integer, Status> siteStatusMap
+    - int NUMBER_OF_SITES
+    - Set<String> replicatedVariables
+    - TransactionManager transactionManager
+    - HashMap<String, Long> lastWriteMap
+    ~ void failSite(int)
+    ~ void recoverSite(int)
+    ~ Optional<Integer> getReadLock(String, String)
+    ~ boolean canAllUpSitesProvideWriteLock(String, String)
+    ~ List<Integer> getWriteLock(String, String)
+    + Optional<Integer> read(String, int)
+    ~ Optional<Integer> readForRO(String, Long)
+    ~ Optional<Integer> readForROFromSpecificSite(String, Long, int)
+    ~ void commitWrites(Map<String, Integer>, Map<String, List<Integer>>, long)
+    ~ void releaseReadLock(String, int, String)
+    ~ void releaseWriteLock(String, int)
+    ~ Optional<String> getWriteLockHolder(String)
+    ~ List<String> getReadLockHolders(String)
+    ~ void setTransactionManager(TransactionManager)
+    ~ Map<String, Long> getLastWriteMapClone()
+}
+
+class Transaction {
+    @Getter
+    - String name;
+    - long beginTime;
+}
+class TransactionManager {
+    - Map<String, Transaction> transactionMap;
+    - SiteManager siteManager;
+    - WaitQueueManager waitQueueManager;
+    - DeadLockManager deadLockManager;
+    ~ Set<String> abortedTransactions;
+    ~ void runDeadLockDetection()
+    - void abortTransactionAfterDeadlock(String)
+    - String findYoungestTransaction(List<List<String>>)
+    ~ void createReadWriteTransaction(String, long)
+    ~ void createReadOnlyTransaction(String, long)
+    - void validateTransactionName(String)
+    ~ void write(String, String)
+    - void handleWaitingForOperation(String, String)
+    - void handleWaitingForOperation(String, String, int)
+    ~ Optional<Integer> read(String, String)
+    - Optional<Integer> readFromReadWriteTransaction(ReadWriteTransaction, String)
+    - Optional<Integer> readFromReadOnlyTransaction(Transaction, String)
+    - void checkROTransactionsForWaitingOperations(int)
+    ~ void endTransaction(String, long)
+    ~ void processWaitingOperationsIfAny(String)
+    - void releaseResourcesOfReadWriteTransaction(ReadWriteTransaction)
+    - boolean commitTransaction(String, long)
+    ~ void checkTransactionsForAbortionAfterSiteFailure(int)
+}
+
+class WaitQueueManager {
+    - Map<String, List<Operation>> variableWaitQueueMap
+    ~ void removeAllPendingOperationOfTransaction(String)
+    ~ Optional<Operation> pollNextWaitingOperation(String)
+    ~ List<Operation> pollUntilNextWriteOperation(String)
+    ~ Optional<Operation> peekAtNextWaitingOperation(String)
+    ~ boolean precedingWriteOperationExists(String)
+    ~ boolean isOperationAlreadyWaiting(String)
+    ~ void addWaitingOperation(String, Operation)
+    ~ Optional<String> getLastWriteTransaction(String)
+    ~ List<String> getQueueHoldersForWriteOperation(String)
+}
+
+
+enum OperationType {
+READ
+WRITE
+}
+
+enum SiteStatus {
+UP
+DOWN
+}
+
+Database <-- TransactionManager
+Database <-- SiteManager
+Database <-- WaitQueueManager
+TransactionManager <-- DeadLockManager
+Site <-- DataManager
+DataManager <-- LockTable
+WaitQueueManager <-- Operation
+Transaction <-- ReadOnlyTransaction
+Transaction <-- ReadWriteTransaction
+TransactionManager <-- Transaction
+SiteStatus --> Site
+OperationType --> Operation
+
+@enduml

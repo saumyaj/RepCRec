@@ -1381,5 +1381,48 @@ public class Test1 {
 //        assertEquals("33", lines[3]);
     }
 
+    @Test
+    void test101 () throws Exception {
+
+        List<String> instructions = new ArrayList<>();
+        instructions.add("begin(T1)");
+        instructions.add("begin(T2)");
+        instructions.add("fail(3)");
+        instructions.add("fail(4)");
+        instructions.add("R(T1,x1)");
+        instructions.add("W(T2,x8,88)");
+        instructions.add("end(T1)");
+        instructions.add("recover(4)");
+        instructions.add("recover(3)");
+        instructions.add("R(T2,x3)");
+        instructions.add("end(T2)");
+        instructions.add("dump()");
+        instructions.add("begin(T3)");
+        instructions.add("fail(1)");
+        instructions.add("fail(2)");
+        instructions.add("fail(5)");
+        instructions.add("fail(6)");
+        instructions.add("fail(7)");
+        instructions.add("fail(8)");
+        instructions.add("fail(9)");
+        instructions.add("fail(10)");
+        instructions.add("R(T3, x8)");
+        instructions.add("begin(T4)");
+        instructions.add("W(T4, x8, 25)");
+        instructions.add("end(T4)");
+        instructions.add("end(T3)");
+
+
+
+        Driver.executeFromList(instructions);
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+        String[] lines = filterLines(baos.toString().split("\n"));
+        System.out.println(Arrays.toString(lines));
+//        assertEquals("x1: 10", lines[0]);
+//        assertEquals("x1: 50", lines[1]);
+//        assertEquals("22", lines[2]);
+//        assertEquals("33", lines[3]);
+    }
+
 
 }

@@ -25,7 +25,7 @@ class ReadWriteTransaction extends Transaction {
      * @param variableValue Value of the variable
      * @author Omkar
      */
-    public void writeToVariable(String variableName, int variableValue) {
+    void writeToVariable(String variableName, int variableValue) {
         if (!writeLocks.containsKey(variableName)) {
             return;
 //            throw new Exception("Transaction " + getName() + " has not acquired the write lock for variable " + variableName);
@@ -33,7 +33,7 @@ class ReadWriteTransaction extends Transaction {
         modifiedVariables.put(variableName, variableValue);
     }
 
-    public Map<String, Integer> getReadLocks() {
+    Map<String, Integer> getReadLocks() {
         return readLocks;
     }
 
@@ -90,7 +90,7 @@ class ReadWriteTransaction extends Transaction {
      * @param siteId Site id
      * @author Omkar
      */
-    public void addReadLock(String variableName, Integer siteId) {
+    void addReadLock(String variableName, Integer siteId) {
         readLocks.put(variableName, siteId);
         return;
     }
@@ -101,7 +101,7 @@ class ReadWriteTransaction extends Transaction {
      * @param siteIdList Site ids
      * @author Omkar
      */
-    public void addWriteLock(String variableName, List<Integer> siteIdList) {
+    void addWriteLock(String variableName, List<Integer> siteIdList) {
         writeLocks.put(variableName, siteIdList);
         return;
     }
@@ -112,7 +112,7 @@ class ReadWriteTransaction extends Transaction {
      * @return true if sites were not already present in the list, false otherwise
      * @author Omkar
      */
-    public boolean addAccessedSites(List<Integer> listOfSites) {
+    boolean addAccessedSites(List<Integer> listOfSites) {
         return sitesAccessed.addAll(listOfSites);
     }
 
@@ -122,7 +122,7 @@ class ReadWriteTransaction extends Transaction {
      * @return true if site was not already present in the list, false otherwise
      * @author Omkar
      */
-    public boolean addAccessedSite(int siteId) {
+    boolean addAccessedSite(int siteId) {
         return sitesAccessed.add(siteId);
     }
 

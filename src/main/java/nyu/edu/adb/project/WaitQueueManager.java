@@ -4,12 +4,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 class WaitQueueManager {
-    Map<String, List<Operation>> variableWaitQueueMap;
-    List<String> listOfVariables;
+    private Map<String, List<Operation>> variableWaitQueueMap;
 
     WaitQueueManager() {
         variableWaitQueueMap = new HashMap<>();
-        listOfVariables = new ArrayList<>();
     }
 
     /**

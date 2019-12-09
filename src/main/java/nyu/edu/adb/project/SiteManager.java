@@ -41,7 +41,7 @@ class SiteManager {
      * Performs the process of site recovery, updating stale set of variables and checking for any waiting operations
      * @author Omkar
      */
-    public void recoverSite(int siteId) {
+    void recoverSite(int siteId) {
         siteStatusMap.put(siteId, Status.UP);
         Site site = siteMap.get(siteId);
         site.clearAllLocks();
@@ -78,7 +78,7 @@ class SiteManager {
      * Checks if all up sites can provide write locks
      * @author Saumya
      */
-    public boolean canAllUpSitesProvideWriteLock(String variableName, String transactionId) {
+    boolean canAllUpSitesProvideWriteLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         for (Integer siteId : listOfSiteIds) {
             Site site = siteMap.get(siteId);
@@ -94,7 +94,7 @@ class SiteManager {
      * Checks and returns the site ids where the write lock was successfully acquired
      * @author Saumya
      */
-    public List<Integer> getWriteLock(String variableName, String transactionId) {
+    List<Integer> getWriteLock(String variableName, String transactionId) {
         List<Integer> listOfSiteIdWhereLockAcquired = new ArrayList<>();
 
         // First check if writeLock is available on all the site
@@ -133,7 +133,7 @@ class SiteManager {
      * Issues a read for given variable and tickTime for a read only transaction
      * @author Omkar
      */
-    public Optional<Integer> readForRO(String variableName, Long tickTime) {
+    Optional<Integer> readForRO(String variableName, Long tickTime) {
         List<Integer> listOfSiteIds = variableToSiteIdMap.get(variableName);
         for (int siteId : listOfSiteIds) {
             Site site = siteMap.get(siteId);
@@ -151,7 +151,7 @@ class SiteManager {
      * Issues a read for given variable on a particular site with particular tickTime for a read only transaction
      * @author Omkar
      */
-    public Optional<Integer> readForROFromSpecificSite(String variableName, Long tickTime, int siteId) {
+    Optional<Integer> readForROFromSpecificSite(String variableName, Long tickTime, int siteId) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
             return site.readForRO(variableName, tickTime);
@@ -163,7 +163,7 @@ class SiteManager {
      * Commits writes for given variables and locks acquired
      * @author Omkar
      */
-    public void commitWrites(Map<String, Integer> modifiedVariables, Map<String, List<Integer>> writeLocks,
+    void commitWrites(Map<String, Integer> modifiedVariables, Map<String, List<Integer>> writeLocks,
                              long tickTime) {
         for (String variableName : modifiedVariables.keySet()) {
             int variableValue = modifiedVariables.get(variableName);
@@ -182,7 +182,7 @@ class SiteManager {
      * Transfers a release read lock call to particular site
      * @author Saumya
      */
-    public void releaseReadLock(String variableName, int siteId, String transactionName) {
+    void releaseReadLock(String variableName, int siteId, String transactionName) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
             site.releaseReadLock(variableName, transactionName);
@@ -193,7 +193,7 @@ class SiteManager {
      * Transfers a release write lock call to particular site
      * @author Omkar
      */
-    public void releaseWriteLock(String variableName, int siteId) {
+    void releaseWriteLock(String variableName, int siteId) {
         Site site = siteMap.get(siteId);
         if (siteStatusMap.get(siteId).equals(Status.UP)) {
             site.releaseWriteLock(variableName);
@@ -271,11 +271,11 @@ class SiteManager {
         }
     }
 
-    public void setTransactionManager(TransactionManager transactionManager) {
+    void setTransactionManager(TransactionManager transactionManager) {
         this.transactionManager = transactionManager;
     }
 
-    public Map<String, Long> getLastWriteMapClone() {
+    Map<String, Long> getLastWriteMapClone() {
         return (Map<String, Long>) lastWriteMap.clone();
     }
 }

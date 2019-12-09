@@ -36,7 +36,7 @@ class Database {
      * appropriate operation is performed by the database
      * @author Saumya
      */
-    void handleQuery(String query) throws Exception {
+    public void handleQuery(String query) throws Exception {
         if (query==null) {
             throw new NullPointerException("query is null");
         }
@@ -90,7 +90,7 @@ class Database {
     /**
      * @author Saumya
      */
-    private void write(String paramsString) throws Exception {
+    private void write(String paramsString) {
         String[] params = paramsString.split(",");
         if (params.length == 3) {
             transactionManager.write(params[0].trim(), params[1].trim(), Integer.parseInt(params[2].trim()));
